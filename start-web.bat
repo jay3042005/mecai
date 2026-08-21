@@ -14,7 +14,7 @@ echo.
 echo Detected folder: %ROOT%
 echo.
 
-if not exist "%ROOT%\package.json" goto :folder_error
+if not exist "%ROOT%\pnpm-workspace.yaml" goto :folder_error
 if not exist "%WEB%\package.json" goto :folder_error
 
 where git >nul 2>&1 || goto :git_error
@@ -57,11 +57,11 @@ goto :exit
 
 :folder_error
 echo Could not locate the MEC-AI folder.
-echo Expected this file beside package.json and apps\web\package.json.
+echo Expected this file beside pnpm-workspace.yaml and apps\web\package.json.
 echo.
 echo Current path: %ROOT%
 echo Checking files:
-if exist "%ROOT%\package.json" (echo   [OK] package.json) else (echo   [MISSING] package.json)
+if exist "%ROOT%\pnpm-workspace.yaml" (echo   [OK] pnpm-workspace.yaml) else (echo   [MISSING] pnpm-workspace.yaml)
 if exist "%WEB%\package.json" (echo   [OK] apps\web\package.json) else (echo   [MISSING] apps\web\package.json)
 
 :exit
