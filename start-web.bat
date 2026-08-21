@@ -58,12 +58,12 @@ start "MEC-AI Dashboard" /d "%WEB%" /min node "%WEB%\node_modules\next\dist\bin\
 echo Waiting for servers to be ready...
 :wait_api
 timeout /t 1 /nobreak >nul
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:%API_PORT%/' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { exit 1 }"
+powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',%API_PORT%);$c.Close();exit 0}catch{exit 1}"
 if errorlevel 1 goto :wait_api
 
 :wait_web
 timeout /t 1 /nobreak >nul
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:%WEB_PORT%/health' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { exit 1 }"
+powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',%WEB_PORT%);$c.Close();exit 0}catch{exit 1}"
 if errorlevel 1 goto :wait_web
 
 echo.
