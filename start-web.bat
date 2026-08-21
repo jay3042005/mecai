@@ -51,9 +51,7 @@ set "MECAI_DATABASE_PATH=%API_DIR%\.data\mecai.db"
 start "MEC-AI API" /min "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port %API_PORT%
 
 echo Starting dashboard...
-set "HOSTNAME=0.0.0.0"
-set "PORT=%WEB_PORT%"
-start "MEC-AI Dashboard" /d "%WEB%" /min node "%WEB%\node_modules\next\dist\bin\next" dev --hostname 0.0.0.0 --port %WEB_PORT%
+start "MEC-AI Dashboard" /min "%WEB%\dev.bat"
 
 echo Waiting for servers to be ready...
 :wait_api
