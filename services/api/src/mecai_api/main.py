@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     #: address fails CORS and the client reports "could not reach the scoring
     #: service" — sending the reader off to restart a server that is already
     #: running. Same host, same port, so allowing both costs nothing.
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origins: list[str] = ["*"]
 
     #: Mock endpoints serve synthetic data. Must be false in production so
     #: generated readings can never be mistaken for a patient's own.
