@@ -3,23 +3,26 @@ setlocal EnableExtensions
 title MEC-AI Web Dashboard
 
 set "ROOT=%~dp0"
-set "WEB=%ROOT%apps\web"
+set "ROOT=%ROOT:~0,-1%"
+set "WEB=%ROOT%\apps\web"
 set "PORT=3000"
 
-if not exist "%ROOT%package.json" goto :folder_error
-if not exist "%WEB%\package.json" goto :folder_error
-
-pushd "%ROOT%" || goto :folder_error
-call corepack enable >nul 2>&1
-where pnpm >nul 2>&1 || goto :pnpm_error
-
-cls
 echo ============================================================
 echo                 MEC-AI WEB DASHBOARD
 echo ============================================================
 echo.
-echo Installing dependencies with pnpm...
-call pnpm install
+echo Detected folder: %ROOT%
+echo.
+
+if not exist "%ROOT%\package.json" goto :folder_error
+if not exist "%WEB%\package.json" goto :folder_error
+
+where git >nul 2>&1 || goto :git_error
+call corepack enable >nul 2>&1
+where pnpm >nul 2>&1 || goto :pnpm_error
+
+echo Installing dependencies...
+call pnpm --dir "%ROOT%" install
 if errorlevel 1 goto :failed
 
 set "LAN_IP="
@@ -31,35 +34,36 @@ echo.
 echo Local:   http://127.0.0.1:%PORT%/dashboard
 echo Network: http://%LAN_IP%:%PORT%/dashboard
 echo.
-echo Starting with pnpm dev...
+echo Starting server...
 echo Keep this window open.
 echo.
 
-start "MEC-AI Dashboard Server" /b pnpm --dir apps/web run dev -- --hostname 0.0.0.0 --port %PORT%
-timeout /t 3 /nobreak >nul
 start "" "http://127.0.0.1:%PORT%/dashboard"
-echo Server running. Press Ctrl+C here to stop it.
-pause
-taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard Server" /T /F >nul 2>&1
-popd
+call pnpm --dir "%ROOT%\apps\web" run dev -- --hostname 0.0.0.0 --port %PORT%
 exit /b 0
+
+:git_error
+echo Git is required. Install Git for Windows, then retry.
+goto :exit
 
 :pnpm_error
 echo pnpm is unavailable. Install Node.js/Corepack, then retry.
-popd
-pause
-exit /b 1
+goto :exit
 
 :failed
 echo.
 echo pnpm failed. Check the error above.
-popd
-pause
-exit /b 1
+goto :exit
 
 :folder_error
 echo Could not locate the MEC-AI folder.
 echo Expected this file beside package.json and apps\web\package.json.
-echo Launcher path: %~dp0
+echo.
+echo Current path: %ROOT%
+echo Checking files:
+if exist "%ROOT%\package.json" (echo   [OK] package.json) else (echo   [MISSING] package.json)
+if exist "%WEB%\package.json" (echo   [OK] apps\web\package.json) else (echo   [MISSING] apps\web\package.json)
+
+:exit
 pause
 exit /b 1

@@ -3,7 +3,7 @@ setlocal EnableExtensions
 title MEC-AI Update
 
 set "ROOT=%~dp0"
-pushd "%ROOT%" || goto :folder_error
+set "ROOT=%ROOT:~0,-1%"
 
 where git >nul 2>&1 || goto :git_error
 where pnpm >nul 2>&1 || (
@@ -15,30 +15,30 @@ echo ============================================================
 echo                    MEC-AI UPDATE
 echo ============================================================
 echo.
+echo Repository: %ROOT%
+echo.
 
-git rev-parse --is-inside-work-tree >nul 2>&1 || goto :folder_error
+git -C "%ROOT%" rev-parse --is-inside-work-tree >nul 2>&1 || goto :folder_error
 
-for /f "delims=" %%A in ('git status --porcelain') do (
+for /f "delims=" %%A in ('git -C "%ROOT%" status --porcelain') do (
   echo Local changes detected. Update stopped to avoid overwriting them.
   echo Commit or stash your changes, then run update.bat again.
-  popd
   pause
   exit /b 1
 )
 
 echo Pulling latest code from origin/main...
-git pull --ff-only origin main
+git -C "%ROOT%" pull --ff-only origin main
 if errorlevel 1 goto :failed
 
 echo.
 echo Installing/updating pnpm dependencies...
-call pnpm install
+call pnpm --dir "%ROOT%" install
 if errorlevel 1 goto :failed
 
 echo.
 echo Update complete.
 echo Run start-web.bat to launch the dashboard.
-popd
 pause
 exit /b 0
 
@@ -58,6 +58,5 @@ goto :stop
 echo Update failed. Check the error above.
 
 :stop
-popd
 pause
 exit /b 1
