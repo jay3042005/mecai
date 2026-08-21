@@ -36,16 +36,33 @@ echo Local:   http://127.0.0.1:%PORT%/dashboard
 echo Network: http://%LAN_IP%:%PORT%/dashboard
 echo.
 echo Starting server...
-echo Keep this window open.
 echo.
 
-start "" "http://127.0.0.1:%PORT%/dashboard"
 pushd "%WEB%"
 set "HOSTNAME=0.0.0.0"
 set "PORT=%PORT%"
-call pnpm run dev
+start "MEC-AI Dashboard Server" /b cmd /c "set HOSTNAME=0.0.0.0&& set PORT=%PORT%&& cd /d "%WEB%" && pnpm run dev -- --hostname 0.0.0.0 --port %PORT% --allow-dev-origins *"
 popd
 popd
+
+echo Waiting for server to be ready...
+:wait_loop
+timeout /t 1 /nobreak >nul
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:%PORT%/health' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { exit 1 }"
+if errorlevel 1 goto :wait_loop
+
+echo Server ready! Opening dashboard...
+start "" "http://127.0.0.1:%PORT%/dashboard"
+
+echo.
+echo ============================================================
+echo   Dashboard: http://127.0.0.1:%PORT%/dashboard
+echo   Network:   http://%LAN_IP%:%PORT%/dashboard
+echo ============================================================
+echo.
+echo Press any key to stop the server...
+pause >nul
+taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard Server" /T /F >nul 2>&1
 exit /b 0
 
 :git_error
