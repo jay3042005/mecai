@@ -220,16 +220,22 @@ export default function SosPanel({ events, onResolve, loading }: SosPanelProps) 
                 )}
 
                 {/* Location & Notes */}
-                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     {event.latitude != null && event.longitude != null ? (
-                      <>
+                      <a
+                        className="flex items-center gap-1.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+                        href={`https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=17/${event.latitude}/${event.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open ${event.display_name}'s emergency location in OpenStreetMap`}
+                      >
                         <MapPin size={14} style={{ color: "var(--mec-ink-muted)" }} />
                         <span className="text-[13px] tabular-nums" style={{ color: "var(--mec-ink-primary)" }}>
                           {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
                           {event.accuracy_m != null && ` (±${Math.round(event.accuracy_m)}m)`}
                         </span>
-                      </>
+                      </a>
                     ) : (
                       <>
                         <MapPinOff size={14} style={{ color: "var(--mec-ink-muted)" }} />

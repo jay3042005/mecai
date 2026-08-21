@@ -26,6 +26,7 @@ import AnimatedGradientBackground, {
   MEC_GRADIENT,
 } from "@/components/ui/animated-gradient-background";
 import { MecWordmark } from "@/components/ui/mec-wordmark";
+import Image from "next/image";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
 /** What the watch actually streams, stated plainly. */
@@ -65,6 +66,14 @@ export function IntroHero() {
       />
 
       <div className="relative z-10 flex w-full max-w-3xl flex-col items-center">
+        <Image
+          src="/mec-ai-logo.png"
+          alt="MEC-AI logo"
+          width={512}
+          height={512}
+          priority
+          className="mb-5 h-28 w-28 rounded-full object-cover shadow-lg sm:h-32 sm:w-32"
+        />
         <MecWordmark className="justify-center text-5xl sm:text-6xl md:text-7xl" />
 
         <motion.p

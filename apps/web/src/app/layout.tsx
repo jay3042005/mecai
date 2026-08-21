@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: "MEC-AI Dashboard",
   description:
     "Cardiovascular risk monitoring for MEC-AI wearable cuffs. Screening indicators, not diagnoses.",
+  icons: {
+    icon: "/mec-ai-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
