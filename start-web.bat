@@ -6,6 +6,10 @@ set "ROOT=%~dp0"
 set "WEB=%ROOT%apps\web"
 set "PORT=3000"
 
+if not exist "%ROOT%package.json" goto :folder_error
+if not exist "%WEB%\package.json" goto :folder_error
+pushd "%ROOT%" || goto :folder_error
+
 cls
 echo ============================================================
 echo                 MEC-AI WEB DASHBOARD
@@ -26,19 +30,23 @@ if not defined LAN_IP set "LAN_IP=127.0.0.1"
 
 if not exist "%ROOT%node_modules" (
   echo [1/3] Installing dashboard dependencies...
-  call pnpm install --dir "%ROOT%"
+  call pnpm install
   if errorlevel 1 goto :failed
 )
 
 if not exist "%WEB%\.next\BUILD_ID" (
   echo [2/3] Building dashboard...
-  call pnpm --dir "%WEB%" build
+  pushd "apps\web"
+  call pnpm build
+  popd
   if errorlevel 1 goto :failed
 )
 
 if not exist "%WEB%\.next\standalone\server.js" (
   echo Standalone server missing. Rebuilding...
-  call pnpm --dir "%WEB%" build
+  pushd "apps\web"
+  call pnpm build
+  popd
   if errorlevel 1 goto :failed
 )
 
@@ -66,6 +74,7 @@ echo Close this window to stop the dashboard.
 echo.
 pause
 taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard Server" /T /F >nul 2>&1
+popd
 exit /b 0
 
 :node_error
@@ -81,5 +90,13 @@ exit /b 1
 :failed
 echo.
 echo Dashboard setup failed. Check the error above, then run this file again.
+popd
+pause
+exit /b 1
+
+:folder_error
+echo Could not locate the MEC-AI folder.
+echo Expected this file beside package.json and apps\web\package.json.
+echo Current launcher path: %~dp0
 pause
 exit /b 1
