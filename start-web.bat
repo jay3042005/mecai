@@ -46,10 +46,12 @@ popd
 
 echo.
 echo Starting API server...
-start "MEC-AI API Server" /b "%ROOT%\start-api-server.bat"
+set "MECAI_ENABLE_MOCK_ENDPOINTS=false"
+set "MECAI_DATABASE_PATH=%API_DIR%\.data\mecai.db"
+start "MEC-AI API" /min cmd /c "cd /d "%API_DIR%" && "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port %API_PORT%"
 
 echo Starting dashboard...
-start "MEC-AI Dashboard Server" /b "%ROOT%\start-dashboard.bat"
+start "MEC-AI Dashboard" /min cmd /c "cd /d "%WEB%" && set HOSTNAME=0.0.0.0&& set PORT=%WEB_PORT%&& npx next dev --hostname 0.0.0.0 --port %WEB_PORT%"
 
 echo Waiting for servers to be ready...
 :wait_api
@@ -77,8 +79,8 @@ echo ============================================================
 echo.
 echo Press any key to stop both servers...
 pause >nul
-taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard Server" /T /F >nul 2>&1
-taskkill /FI "WINDOWTITLE eq MEC-AI API Server" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard*" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq MEC-AI API*" /T /F >nul 2>&1
 exit /b 0
 
 :python_error
