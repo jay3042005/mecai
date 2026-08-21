@@ -1,0 +1,154 @@
+/* GENERATED FILE — DO NOT EDIT.
+ * Source: packages/tokens/tokens.json  (spec: docs/design.md §3)
+ * Regenerate: node packages/tokens/generate.mjs
+ */
+
+@import "tailwindcss";
+
+@theme {
+  --color-page: var(--mec-page);
+  --color-card: var(--mec-card);
+  --color-elevated: var(--mec-elevated);
+  --color-ink-primary: var(--mec-ink-primary);
+  --color-ink-secondary: var(--mec-ink-secondary);
+  --color-ink-muted: var(--mec-ink-muted);
+  --color-gridline: var(--mec-gridline);
+  --color-baseline: var(--mec-baseline);
+  --color-hairline: var(--mec-hairline);
+  --color-risk-low: var(--mec-risk-low);
+  --color-risk-moderate: var(--mec-risk-moderate);
+  --color-risk-high: var(--mec-risk-high);
+  --color-risk-unknown: var(--mec-risk-unknown);
+  --color-alarm: var(--mec-alarm);
+  --color-s1: var(--mec-s1);
+  --color-s2: var(--mec-s2);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-xxl: 32px;
+  --radius-hero: 48px;
+  --radius-pill: 999px;
+  --radius-card: 24px;
+  --radius-control: 999px;
+  --radius-chip: 999px;
+  --radius-ring: 999px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  --ease-instant: cubic-bezier(0,0,0.2,1);
+  --ease-fast: cubic-bezier(0.2,0.8,0.2,1);
+  --ease-value: cubic-bezier(0,0,0.2,1);
+  --ease-ambient: cubic-bezier(0.4,0,0.6,1);
+  --ease-stagger: linear;
+
+  --state-hover: 0.08;
+  --state-focus: 0.1;
+  --state-press: 0.12;
+  --state-drag: 0.16;
+  --state-disabled: 0.38;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Dark is the default — see docs/design.md §2 and §3.2. */
+:root {
+  color-scheme: dark;
+  --mec-page: #0d0d0d;
+  --mec-card: #1a1a19;
+  --mec-elevated: #242422;
+  --mec-ink-primary: #ffffff;
+  --mec-ink-secondary: #c3c2b7;
+  --mec-ink-muted: #898781;
+  --mec-gridline: #2c2c2a;
+  --mec-baseline: #383835;
+  --mec-hairline: rgba(255,255,255,0.10);
+  --mec-risk-low: #0ca30c;
+  --mec-risk-moderate: #fab219;
+  --mec-risk-high: #d03b3b;
+  --mec-risk-unknown: #898781;
+  --mec-alarm: #d03b3b;
+  --mec-s1: #3987e5;
+  --mec-s2: #9ec5f4;
+  --mec-dur-instant: 120ms;
+  --mec-dur-fast: 220ms;
+  --mec-dur-value: 900ms;
+  --mec-dur-ambient: 1600ms;
+  --mec-dur-stagger: 60ms;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --mec-page: #f9f9f7;
+  --mec-card: #fcfcfb;
+  --mec-elevated: #ffffff;
+  --mec-ink-primary: #0b0b0b;
+  --mec-ink-secondary: #52514e;
+  --mec-ink-muted: #898781;
+  --mec-gridline: #e1e0d9;
+  --mec-baseline: #c3c2b7;
+  --mec-hairline: rgba(11,11,11,0.10);
+  --mec-risk-low: #0ca30c;
+  --mec-risk-moderate: #fab219;
+  --mec-risk-high: #d03b3b;
+  --mec-risk-unknown: #898781;
+  --mec-alarm: #d03b3b;
+  --mec-s1: #2a78d6;
+  --mec-s2: #104281;
+  --mec-dur-instant: 120ms;
+  --mec-dur-fast: 220ms;
+  --mec-dur-value: 900ms;
+  --mec-dur-ambient: 1600ms;
+  --mec-dur-stagger: 60ms;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:where(:not([data-theme="dark"])) {
+    color-scheme: light;
+    --mec-page: #f9f9f7;
+    --mec-card: #fcfcfb;
+    --mec-elevated: #ffffff;
+    --mec-ink-primary: #0b0b0b;
+    --mec-ink-secondary: #52514e;
+    --mec-ink-muted: #898781;
+    --mec-gridline: #e1e0d9;
+    --mec-baseline: #c3c2b7;
+    --mec-hairline: rgba(11,11,11,0.10);
+    --mec-risk-low: #0ca30c;
+    --mec-risk-moderate: #fab219;
+    --mec-risk-high: #d03b3b;
+    --mec-risk-unknown: #898781;
+    --mec-alarm: #d03b3b;
+    --mec-s1: #2a78d6;
+    --mec-s2: #104281;
+    --mec-dur-instant: 120ms;
+    --mec-dur-fast: 220ms;
+    --mec-dur-value: 900ms;
+    --mec-dur-ambient: 1600ms;
+    --mec-dur-stagger: 60ms;
+  }
+}
+
+@layer base {
+  body {
+    background: var(--mec-page);
+    color: var(--mec-ink-primary);
+    font-family: var(--font-sans);
+  }
+  /* Axis ticks and table cells only — never a hero figure. */
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Hard requirement, not a nicety: docs/design.md §3.6. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

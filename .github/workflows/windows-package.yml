@@ -1,0 +1,59 @@
+name: Windows package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - apps/web/**
+      - services/api/**
+      - deploy/windows/**
+      - .github/workflows/windows-package.yml
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      - name: Build dashboard
+        shell: pwsh
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --dir apps/web build
+      - name: Build API executable
+        shell: pwsh
+        run: |
+          uv run --directory services/api --with pyinstaller pyinstaller --noconfirm --onefile --name MEC-AI-API --paths services/api/src --collect-all uvicorn --collect-all fastapi services/api/src/mecai_api/__main__.py
+      - name: Assemble client bundle
+        shell: pwsh
+        run: |
+          $bundle = "MEC-AI-Windows"
+          New-Item -ItemType Directory -Force "$bundle\api", "$bundle\web", "$bundle\data" | Out-Null
+          Copy-Item "services/api/dist/MEC-AI-API.exe" "$bundle\api\"
+          Copy-Item "apps/web/.next/standalone/*" "$bundle\web\" -Recurse
+          New-Item -ItemType Directory -Force "$bundle\web\.next" | Out-Null
+          Copy-Item "apps/web/.next/static" "$bundle\web\.next\static" -Recurse
+          Invoke-WebRequest "https://nodejs.org/dist/v24.14.0/node-v24.14.0-win-x64.zip" -OutFile "node.zip"
+          Expand-Archive "node.zip" -DestinationPath "."
+          Copy-Item "node-v24.14.0-win-x64/node.exe" "$bundle\web\node.exe"
+          Copy-Item "deploy/windows/*.bat" "$bundle\"
+          @"
+          MECAI_DATABASE_PATH=data/mecai.db
+          MECAI_ENABLE_MOCK_ENDPOINTS=false
+          "@ | Set-Content "$bundle\.env"
+          Compress-Archive -Path $bundle -DestinationPath MEC-AI-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MEC-AI-Windows
+          path: MEC-AI-Windows.zip
+          if-no-files-found: error

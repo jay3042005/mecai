@@ -1,0 +1,18 @@
+/* App-level styles.
+ *
+ * Design tokens live in ./tokens.css, which is GENERATED from
+ * packages/tokens/tokens.json. Do not add colour, radius, or motion values
+ * here — add them to tokens.json and run `node packages/tokens/generate.mjs`,
+ * so the Flutter app and this dashboard stay in step.
+ */
+@import "./tokens.css";
+
+@layer base {
+  /* Hairline ring plus a surface step is the elevation mechanism; there are no
+   * drop shadows in this system except the SOS confirm sheet. */
+  .mec-card {
+    background: var(--mec-card);
+    border: 1px solid var(--mec-hairline);
+    border-radius: var(--radius-card);
+  }
+}

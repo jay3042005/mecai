@@ -1,0 +1,8 @@
+packages:
+  - "apps/web"
+  - "packages/*"
+
+# Carried over from the create-next-app scaffold.
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
