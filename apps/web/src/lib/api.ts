@@ -100,7 +100,7 @@ export interface RiskProfile {
   family_history_cvd?: boolean;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_MECAI_API_URL ?? "http://127.0.0.1:8000";
+const BASE_URL = "/api";
 
 export class ApiError extends Error {
   constructor(
