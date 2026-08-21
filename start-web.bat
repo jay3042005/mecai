@@ -1,47 +1,85 @@
 @echo off
-setlocal
+setlocal EnableExtensions
+title MEC-AI Web Dashboard
 
 set "ROOT=%~dp0"
 set "WEB=%ROOT%apps\web"
+set "PORT=3000"
 
-where node >nul 2>&1
-if errorlevel 1 (
-  echo Node.js is required. Run setup-windows.bat first.
-  pause
-  exit /b 1
+cls
+echo ============================================================
+echo                 MEC-AI WEB DASHBOARD
+echo ============================================================
+echo.
+
+where node >nul 2>&1 || goto :node_error
+where pnpm >nul 2>&1 || (
+  call corepack enable >nul 2>&1
+  where pnpm >nul 2>&1 || goto :pnpm_error
 )
 
-call corepack enable >nul 2>&1
+rem Select the first non-loopback IPv4 address for phone/LAN access.
+set "LAN_IP="
+for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address"') do if not defined LAN_IP set "LAN_IP=%%A"
+set "LAN_IP=%LAN_IP: =%"
+if not defined LAN_IP set "LAN_IP=127.0.0.1"
 
 if not exist "%ROOT%node_modules" (
-  echo Installing dashboard dependencies. This only happens once.
+  echo [1/3] Installing dashboard dependencies...
   call pnpm install --dir "%ROOT%"
   if errorlevel 1 goto :failed
 )
 
 if not exist "%WEB%\.next\BUILD_ID" (
-  echo Building the dashboard. This only happens once per code change.
+  echo [2/3] Building dashboard...
   call pnpm --dir "%WEB%" build
   if errorlevel 1 goto :failed
 )
 
-echo MEC-AI dashboard: http://127.0.0.1:3000
-if not exist "%WEB%\.next\standalone\server.js" goto :failed
-
-rem Standalone output does not support `next start`.
-if not exist "%WEB%\.next\standalone\.next\static" mkdir "%WEB%\.next\standalone\.next\static"
-xcopy /E /I /Y "%WEB%\.next\static" "%WEB%\.next\standalone\.next\static" >nul
-if exist "%WEB%\public" (
-  xcopy /E /I /Y "%WEB%\public" "%WEB%\.next\standalone\public" >nul
+if not exist "%WEB%\.next\standalone\server.js" (
+  echo Standalone server missing. Rebuilding...
+  call pnpm --dir "%WEB%" build
+  if errorlevel 1 goto :failed
 )
 
-set "PORT=3000"
-call node "%WEB%\.next\standalone\server.js"
-if errorlevel 1 goto :failed
+rem Standalone output needs these runtime assets copied beside server.js.
+if not exist "%WEB%\.next\standalone\.next\static" mkdir "%WEB%\.next\standalone\.next\static"
+xcopy /E /I /Y "%WEB%\.next\static" "%WEB%\.next\standalone\.next\static" >nul
+if exist "%WEB%\public" xcopy /E /I /Y "%WEB%\public" "%WEB%\.next\standalone\public" >nul
+
+echo.
+echo [3/3] Starting dashboard...
+echo.
+echo   Local:   http://127.0.0.1:%PORT%
+echo   Network: http://%LAN_IP%:%PORT%
+echo.
+echo Opening the dashboard in your browser...
+
+rem Bind all interfaces so another phone on the same LAN can connect.
+set "HOSTNAME=0.0.0.0"
+start "MEC-AI Dashboard Server" /b node "%WEB%\.next\standalone\server.js"
+timeout /t 3 /nobreak >nul
+start "" "http://127.0.0.1:%PORT%/dashboard"
+
+echo Dashboard is running. Keep this window open.
+echo Close this window to stop the dashboard.
+echo.
+pause
+taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard Server" /T /F >nul 2>&1
 exit /b 0
+
+:node_error
+echo Node.js is required. Run setup-windows.bat first.
+pause
+exit /b 1
+
+:pnpm_error
+echo pnpm is unavailable. Run setup-windows.bat first.
+pause
+exit /b 1
 
 :failed
 echo.
-echo The dashboard could not start. Check the messages above, then run this file again.
+echo Dashboard setup failed. Check the error above, then run this file again.
 pause
 exit /b 1
