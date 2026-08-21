@@ -115,11 +115,15 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     response = await fetch(`${BASE_URL}${path}`, {
       ...init,
       headers: { "Content-Type": "application/json", ...init?.headers },
       cache: "no-store",
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
   } catch {
     throw new ApiError(
       `Could not reach the scoring service at ${BASE_URL}. Start it with: ` +
