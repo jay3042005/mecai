@@ -21,8 +21,9 @@ where git >nul 2>&1 || goto :git_error
 call corepack enable >nul 2>&1
 where pnpm >nul 2>&1 || goto :pnpm_error
 
+pushd "%ROOT%"
 echo Installing dependencies...
-call pnpm --dir "%ROOT%" install
+call pnpm install
 if errorlevel 1 goto :failed
 
 set "LAN_IP="
@@ -39,7 +40,12 @@ echo Keep this window open.
 echo.
 
 start "" "http://127.0.0.1:%PORT%/dashboard"
-call pnpm --dir "%ROOT%\apps\web" run dev -- --hostname 0.0.0.0 --port %PORT%
+pushd "%WEB%"
+set "HOSTNAME=0.0.0.0"
+set "PORT=%PORT%"
+call pnpm run dev
+popd
+popd
 exit /b 0
 
 :git_error
@@ -53,6 +59,7 @@ goto :exit
 :failed
 echo.
 echo pnpm failed. Check the error above.
+popd
 goto :exit
 
 :folder_error
