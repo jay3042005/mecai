@@ -7,8 +7,6 @@ set "ROOT=%ROOT:~0,-1%"
 set "WEB=%ROOT%\apps\web"
 set "API_DIR=%ROOT%\services\api"
 set "VENV=%API_DIR%\.venv"
-set "WEB_PORT=3000"
-set "API_PORT=8000"
 
 echo ============================================================
 echo                      MEC-AI
@@ -22,8 +20,8 @@ if not exist "%WEB%\package.json" goto :folder_error
 if not exist "%API_DIR%\pyproject.toml" goto :folder_error
 
 py -3.12 --version >nul 2>&1 || goto :python_error
-call corepack enable >nul 2>&1
-where pnpm >nul 2>&1 || goto :pnpm_error
+where node >nul 2>&1 || goto :node_error
+where npm >nul 2>&1 || goto :node_error
 
 set "LAN_IP="
 for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address"') do if not defined LAN_IP set "LAN_IP=%%A"
@@ -32,8 +30,9 @@ if not defined LAN_IP set "LAN_IP=127.0.0.1"
 
 pushd "%ROOT%"
 echo Installing dashboard dependencies...
-call pnpm install
+call npm install --prefix "%WEB%"
 if errorlevel 1 goto :failed
+popd
 
 if not exist "%VENV%\Scripts\python.exe" (
   echo Installing API dependencies...
@@ -42,13 +41,12 @@ if not exist "%VENV%\Scripts\python.exe" (
   "%VENV%\Scripts\python.exe" -m pip install -e "%API_DIR%"
   if errorlevel 1 goto :failed
 )
-popd
 
 echo.
 echo Starting API server...
 set "MECAI_ENABLE_MOCK_ENDPOINTS=false"
 set "MECAI_DATABASE_PATH=%API_DIR%\.data\mecai.db"
-start "MEC-AI API" /min "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port %API_PORT%
+start "MEC-AI API" /min "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port 8000
 
 echo Starting dashboard...
 start "MEC-AI Dashboard" /min "%WEB%\dev.bat"
@@ -56,25 +54,25 @@ start "MEC-AI Dashboard" /min "%WEB%\dev.bat"
 echo Waiting for servers to be ready...
 :wait_api
 timeout /t 1 /nobreak >nul
-powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',%API_PORT%);$c.Close();exit 0}catch{exit 1}"
+powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',8000);$c.Close();exit 0}catch{exit 1}"
 if errorlevel 1 goto :wait_api
 
 :wait_web
 timeout /t 1 /nobreak >nul
-powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',%WEB_PORT%);$c.Close();exit 0}catch{exit 1}"
+powershell -NoProfile -Command "$c=[Net.Sockets.TcpClient]::new();try{$c.Connect('127.0.0.1',3000);$c.Close();exit 0}catch{exit 1}"
 if errorlevel 1 goto :wait_web
 
 echo.
 echo Opening dashboard...
-start "" "http://127.0.0.1:%WEB_PORT%/dashboard"
+start "" "http://127.0.0.1:3000/dashboard"
 
 echo.
 echo ============================================================
-echo   Dashboard: http://127.0.0.1:%WEB_PORT%/dashboard
-echo   API:       http://127.0.0.1:%API_PORT%
+echo   Dashboard: http://127.0.0.1:3000/dashboard
+echo   API:       http://127.0.0.1:8000
 echo.
-echo   LAN Dashboard: http://%LAN_IP%:%WEB_PORT%/dashboard
-echo   LAN API:       http://%LAN_IP%:%API_PORT%
+echo   LAN Dashboard: http://%LAN_IP%:3000/dashboard
+echo   LAN API:       http://%LAN_IP%:8000
 echo ============================================================
 echo.
 echo Press any key to stop both servers...
@@ -87,8 +85,8 @@ exit /b 0
 echo Python 3.12 is required. Install it from https://www.python.org/downloads/windows/
 goto :exit
 
-:pnpm_error
-echo pnpm is unavailable. Install Node.js/Corepack, then retry.
+:node_error
+echo Node.js is required. Install it from https://nodejs.org/
 goto :exit
 
 :failed

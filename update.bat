@@ -6,10 +6,8 @@ set "ROOT=%~dp0"
 set "ROOT=%ROOT:~0,-1%"
 
 where git >nul 2>&1 || goto :git_error
-where pnpm >nul 2>&1 || (
-  call corepack enable >nul 2>&1
-  where pnpm >nul 2>&1 || goto :pnpm_error
-)
+where node >nul 2>&1 || goto :node_error
+where npm >nul 2>&1 || goto :node_error
 
 echo ============================================================
 echo                    MEC-AI UPDATE
@@ -32,8 +30,8 @@ git -C "%ROOT%" pull --ff-only origin main
 if errorlevel 1 goto :failed
 
 echo.
-echo Installing/updating pnpm dependencies...
-call pnpm --dir "%ROOT%" install
+echo Installing/updating npm dependencies...
+call npm install --prefix "%ROOT%\apps\web"
 if errorlevel 1 goto :failed
 
 echo.
@@ -46,8 +44,8 @@ exit /b 0
 echo Git is required. Install Git for Windows, then retry.
 goto :stop
 
-:pnpm_error
-echo pnpm is unavailable. Install Node.js/Corepack, then retry.
+:node_error
+echo Node.js is required. Install it from https://nodejs.org/
 goto :stop
 
 :folder_error
