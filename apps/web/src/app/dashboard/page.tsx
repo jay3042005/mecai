@@ -43,6 +43,7 @@ import TrendsCharts from "@/components/trends-charts";
 import SosPanel from "@/components/sos-panel";
 import ExportModal from "@/components/export-modal";
 import {
+  ABSENT,
   ApiError,
   assess,
   fetchFleetStats,
@@ -52,7 +53,6 @@ import {
   formatRelative,
   resolveSos,
   show,
-  showBloodPressure,
   type AssessmentResponse,
   type FleetStats,
   type PatientSummary,
@@ -723,14 +723,11 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* 2x2 Vitals Grid with MD3 Tonal Surfaces */}
+                    {/* Vitals the ESP32-S3 build actually streams. The MPX5050GP
+                        cuff is absent from this hardware, so no blood-pressure
+                        tile is offered — the ten-year score reads its systolic
+                        from the questionnaire instead. */}
                     <dl className="mt-6 grid grid-cols-2 gap-3">
-                      <VitalTile
-                        label="Blood pressure"
-                        value={showBloodPressure(current.reading)}
-                        unit={current.reading.systolic_mmhg == null ? "" : "mmHg"}
-                        isAbsent={current.reading.systolic_mmhg == null}
-                      />
                       <VitalTile
                         label="Heart rate"
                         value={show(current.reading.heart_rate_bpm)}
@@ -759,6 +756,17 @@ export default function DashboardPage() {
                           sublabel="SHT30 Enclosure"
                         />
                       )}
+                      <VitalTile
+                        label="Computed CVD risk"
+                        value={
+                          detail.assessment.value_pct == null
+                            ? ABSENT
+                            : detail.assessment.value_pct.toFixed(1)
+                        }
+                        unit={detail.assessment.value_pct == null ? "" : "% / 10 yr"}
+                        isAbsent={detail.assessment.value_pct == null}
+                        sublabel={detail.assessment.model_version}
+                      />
                     </dl>
 
                     {/* Risk Factor Drivers Section with Modal Trigger */}
@@ -1002,7 +1010,7 @@ export default function DashboardPage() {
                         {[
                           "Patient Name",
                           "10-Yr CVD Risk",
-                          "Blood Pressure",
+                          "Heart Rate",
                           "SpO₂ Saturation",
                           "Active Alerts",
                           "Actions",
@@ -1064,7 +1072,9 @@ export default function DashboardPage() {
                                 className="tabular px-6 py-4 text-sm font-medium"
                                 style={{ color: "var(--mec-ink-secondary)" }}
                               >
-                                {showBloodPressure(row.reading)}
+                                {row.reading.heart_rate_bpm == null
+                                  ? show(null)
+                                  : `${show(row.reading.heart_rate_bpm)} bpm`}
                               </td>
                               <td
                                 className="tabular px-6 py-4 text-sm font-medium"

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { show, type VitalsReading } from "@/lib/api";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
-import { Table, Activity, Thermometer, Droplet, HeartPulse } from "lucide-react";
+import { Table, Thermometer, Droplet, HeartPulse } from "lucide-react";
 
 export function TimeHorizonPicker({
   value,
@@ -46,17 +46,10 @@ interface ChartConfig {
   referenceLine?: number;
 }
 
-const CHARTS: ChartConfig[] = [
-  {
-    title: "Blood Pressure",
-    icon: Activity,
-    series: [
-      { key: "systolic_mmhg", colorVar: "--mec-s1", label: "Systolic" },
-      { key: "diastolic_mmhg", colorVar: "--mec-s2", label: "Diastolic" },
-    ],
-    referenceLine: 130, // Reference for systolic
-    // We'll draw 130/80 as reference lines manually in the component
-  },
+// The ESP32-S3 build carries MAX30102 (heart rate, SpO2) and SHT30x (temperature)
+// only. There is no MPX5050GP cuff on this hardware, so a blood-pressure chart
+// would plot a series the device can never populate.
+const HR_AND_SPO2: ChartConfig[] = [
   {
     title: "Heart Rate",
     icon: HeartPulse,
@@ -69,13 +62,40 @@ const CHARTS: ChartConfig[] = [
     series: [{ key: "spo2_pct", colorVar: "--mec-s1", label: "SpO₂" }],
     referenceLine: 95,
   },
-  {
-    title: "Temperature",
-    icon: Thermometer,
-    series: [{ key: "temperature_c", colorVar: "--mec-s1", label: "Temp" }],
-    referenceBand: [36.1, 37.2],
-  },
 ];
+
+/**
+ * The SHT30x sits in the enclosure, not against the skin. On this build it fills
+ * `ambient_temp_c` and leaves `temperature_c` null, so a chart hard-wired to the
+ * body field plots nothing while a perfectly good series goes unshown.
+ *
+ * Body temperature wins when present. Ambient is charted only as a fallback, and
+ * is labelled and titled as ambient — with no clinical reference band, because
+ * 36.1–37.2 °C means nothing for the air inside a case.
+ */
+function buildCharts(readings: VitalsReading[]): ChartConfig[] {
+  const hasBody = readings.some((r) => r.temperature_c != null);
+  const hasAmbient = readings.some((r) => r.ambient_temp_c != null);
+
+  const temperature: ChartConfig =
+    hasBody || !hasAmbient
+      ? {
+          title: "Body Temperature",
+          icon: Thermometer,
+          series: [{ key: "temperature_c", colorVar: "--mec-s1", label: "Temp" }],
+          referenceBand: [36.1, 37.2],
+        }
+      : {
+          title: "Ambient Temperature",
+          icon: Thermometer,
+          series: [{ key: "ambient_temp_c", colorVar: "--mec-s1", label: "Ambient" }],
+        };
+
+  return [...HR_AND_SPO2, temperature];
+}
+
+/** Series measured in degrees, which are read to one decimal. */
+const DECIMAL_KEYS = new Set<keyof VitalsReading>(["temperature_c", "ambient_temp_c"]);
 
 function SingleChart({
   config,
@@ -143,13 +163,8 @@ function SingleChart({
       maxY = Math.max(maxY, config.referenceBand[1]);
     }
     if (config.referenceLine) {
-      if (config.title === "Blood Pressure") {
-        maxY = Math.max(maxY, 130);
-        minY = Math.min(minY, 80);
-      } else {
-        minY = Math.min(minY, config.referenceLine);
-        maxY = Math.max(maxY, config.referenceLine);
-      }
+      maxY = Math.max(maxY, config.referenceLine);
+      minY = Math.min(minY, config.referenceLine);
     }
 
     // Add padding to Y range
@@ -219,26 +234,11 @@ function SingleChart({
       ctx.lineTo(width - padding.right, yMax);
       ctx.stroke();
     } else if (config.referenceLine) {
-      if (config.title === "Blood Pressure") {
-        // Draw 130 and 80
-        const ySys = getY(130);
-        const yDia = getY(80);
-        ctx.beginPath();
-        ctx.moveTo(padding.left, ySys);
-        ctx.lineTo(width - padding.right, ySys);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(padding.left, yDia);
-        ctx.lineTo(width - padding.right, yDia);
-        ctx.stroke();
-      } else {
-        const yLine = getY(config.referenceLine);
-        ctx.beginPath();
-        ctx.moveTo(padding.left, yLine);
-        ctx.lineTo(width - padding.right, yLine);
-        ctx.stroke();
-      }
+      const yLine = getY(config.referenceLine);
+      ctx.beginPath();
+      ctx.moveTo(padding.left, yLine);
+      ctx.lineTo(width - padding.right, yLine);
+      ctx.stroke();
     }
     ctx.setLineDash([]);
 
@@ -284,7 +284,7 @@ function SingleChart({
       ctx.fillStyle = inkPrimary.trim() || "#ffffff";
       ctx.textAlign = "left";
       ctx.font = "500 12px tabular-nums, sans-serif";
-      ctx.fillText(lastPoint.val.toFixed(s.key === "temperature_c" ? 1 : 0), lastPoint.x + 8, lastPoint.y);
+      ctx.fillText(lastPoint.val.toFixed(DECIMAL_KEYS.has(s.key) ? 1 : 0), lastPoint.x + 8, lastPoint.y);
       
       // Point marker: 8px, with a 2px ring in the surface colour so it stays
       // legible where it crosses the line or a reference rule.
@@ -414,7 +414,7 @@ export default function TrendsCharts({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {CHARTS.map((config) => (
+        {buildCharts(readings).map((config) => (
           <SingleChart key={config.title} config={config} readings={readings} />
         ))}
       </div>

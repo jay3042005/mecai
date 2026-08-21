@@ -21,8 +21,6 @@ export default function ExportModal({ patientName, readings, assessment, onClose
   const csvData = useMemo(() => {
     const headers = [
       "Timestamp",
-      "Systolic (mmHg)",
-      "Diastolic (mmHg)",
       "Heart Rate (bpm)",
       "SpO₂ (%)",
       "Body Temp (°C)",
@@ -33,8 +31,6 @@ export default function ExportModal({ patientName, readings, assessment, onClose
     const rows = readings.map(r => {
       return [
         r.measured_at,
-        r.systolic_mmhg ?? "",
-        r.diastolic_mmhg ?? "",
         r.heart_rate_bpm ?? "",
         r.spo2_pct ?? "",
         r.temperature_c ?? "",
