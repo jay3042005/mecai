@@ -46,12 +46,10 @@ popd
 
 echo.
 echo Starting API server...
-set "MECAI_ENABLE_MOCK_ENDPOINTS=false"
-set "MECAI_DATABASE_PATH=%API_DIR%\.data\mecai.db"
-start "MEC-AI API Server" /b "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port %API_PORT%
+start "MEC-AI API Server" /b "%ROOT%\start-api-server.bat"
 
 echo Starting dashboard...
-start "MEC-AI Dashboard Server" /b cmd /c "set HOSTNAME=0.0.0.0&& set PORT=%WEB_PORT%&& cd /d "%WEB%" && pnpm run dev -- --hostname 0.0.0.0 --port %WEB_PORT% --allow-dev-origins *"
+start "MEC-AI Dashboard Server" /b "%ROOT%\start-dashboard.bat"
 
 echo Waiting for servers to be ready...
 :wait_api
