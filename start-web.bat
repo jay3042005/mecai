@@ -23,6 +23,14 @@ py -3.12 --version >nul 2>&1 || goto :python_error
 where node >nul 2>&1 || goto :node_error
 where npm >nul 2>&1 || goto :node_error
 
+echo Stopping any running MEC-AI servers...
+taskkill /FI "WINDOWTITLE eq MEC-AI API" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq MEC-AI API*" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq MEC-AI Dashboard*" /T /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') do taskkill /PID %%p /F >nul 2>&1
+for /f "tokens=5" %%p in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING') do taskkill /PID %%p /F >nul 2>&1
+
 set "LAN_IP="
 for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address"') do if not defined LAN_IP set "LAN_IP=%%A"
 set "LAN_IP=%LAN_IP: =%"
