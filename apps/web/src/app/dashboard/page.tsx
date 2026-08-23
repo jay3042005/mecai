@@ -749,21 +749,13 @@ export default function DashboardPage() {
                         isAbsent={current.reading.spo2_pct == null}
                       />
                       {(() => {
-                        // User requested: treat ambient as body temperature on the dashboard.
-                        // When the contact body sensor is absent, use the enclosure SHT30 reading
-                        // as the body value so the tile never shows "Ambient" — it always reads
-                        // as Body temperature. NOTE: ambient ~22 °C would be true hypothermia if
-                        // it were a body reading; the API still never flags ambient_temp_c (by
-                        // design in lib/api.ts / engine.py) so this is display-only.
                         const bodyTemp = current.reading.temperature_c ?? current.reading.ambient_temp_c;
-                        const isFallback = current.reading.temperature_c == null && current.reading.ambient_temp_c != null;
                         return (
                           <VitalTile
                             label="Body temperature"
                             value={show(bodyTemp, 1)}
                             unit={bodyTemp == null ? "" : "°C"}
                             isAbsent={bodyTemp == null}
-                            sublabel={isFallback ? "from ambient sensor" : undefined}
                           />
                         );
                       })()}

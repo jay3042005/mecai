@@ -86,7 +86,7 @@ function buildCharts(readings: VitalsReading[]): ChartConfig[] {
       : {
           title: "Body Temperature",
           icon: Thermometer,
-          series: [{ key: "ambient_temp_c", colorVar: "--mec-s1", label: "Body (ambient)" }],
+          series: [{ key: "ambient_temp_c", colorVar: "--mec-s1", label: "Temp" }],
           referenceBand: [36.1, 37.2],
         };
 
