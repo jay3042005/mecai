@@ -134,7 +134,7 @@ function Assistant() {
               diastolicMmHg: latest.diastolic_mmhg,
               heartRateBpm: latest.heart_rate_bpm,
               spo2Pct: latest.spo2_pct,
-              temperatureC: latest.temperature_c,
+              temperatureC: latest.temperature_c ?? latest.ambient_temp_c,
               acuteFlags: latest.acute_flags.map((f) => ({
                 severity: f.severity,
                 vital: f.vital,

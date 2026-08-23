@@ -60,6 +60,12 @@ flutter run
 flutter analyze && flutter test   # 83 tests
 ```
 
+**Multiple profiles.** One phone can serve several people: *Profile → Profiles*
+lists them and adds new ones. Each person gets their own questionnaire,
+emergency contacts, readings archive, and patient id — so each appears as a
+separate row on the clinician dashboard. A pre-multi-profile install keeps its
+identity and data untouched on upgrade.
+
 **Setting the server address.** Tap the person icon → *Settings* → enter the address
 → *Save and test connection*. A bare IP works; `http://` and `:8000` are filled in
 automatically, and the setting persists across restarts.

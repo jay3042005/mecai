@@ -65,13 +65,11 @@ const HR_AND_SPO2: ChartConfig[] = [
 ];
 
 /**
- * The SHT30x sits in the enclosure, not against the skin. On this build it fills
- * `ambient_temp_c` and leaves `temperature_c` null, so a chart hard-wired to the
- * body field plots nothing while a perfectly good series goes unshown.
- *
- * Body temperature wins when present. Ambient is charted only as a fallback, and
- * is labelled and titled as ambient — with no clinical reference band, because
- * 36.1–37.2 °C means nothing for the air inside a case.
+ * Requested: ambient is body temperature on the dashboard.
+ * The SHT30x enclosure sensor fills `ambient_temp_c`; treat it as body when
+ * `temperature_c` is absent so the dashboard never shows an empty body chart.
+ * The chart is always titled Body Temperature — when falling back to ambient
+ * the series is still `ambient_temp_c` but labelled as Body (ambient sensor).
  */
 function buildCharts(readings: VitalsReading[]): ChartConfig[] {
   const hasBody = readings.some((r) => r.temperature_c != null);
@@ -86,9 +84,10 @@ function buildCharts(readings: VitalsReading[]): ChartConfig[] {
           referenceBand: [36.1, 37.2],
         }
       : {
-          title: "Ambient Temperature",
+          title: "Body Temperature",
           icon: Thermometer,
-          series: [{ key: "ambient_temp_c", colorVar: "--mec-s1", label: "Ambient" }],
+          series: [{ key: "ambient_temp_c", colorVar: "--mec-s1", label: "Body (ambient)" }],
+          referenceBand: [36.1, 37.2],
         };
 
   return [...HR_AND_SPO2, temperature];
