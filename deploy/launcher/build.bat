@@ -12,12 +12,12 @@ echo Installing PyInstaller if needed...
 py -3 -m pip install --upgrade pyinstaller >nul 2>&1
 
 echo Building MECAI-Launcher.exe (no console)...
-:: Icon: copy logo to temp name without spaces (PyInstaller needs .ico, png works but spaces break arg)
+:: Icon: a real multi-size .ico is committed at deploy\launcher\icon.ico.
+:: PyInstaller on Windows rejects PNG icons unless Pillow is installed, which
+:: is why this once failed on machines without it — the committed .ico removes
+:: that dependency entirely.
 set "ICON="
-if exist "%ROOT%\MEC-AI_SIMPLIFIED-LOGO (1).png" (
-  copy /Y "%ROOT%\MEC-AI_SIMPLIFIED-LOGO (1).png" "%~dp0icon.png" >nul
-  set "ICON=--icon=icon.png"
-)
+if exist "%~dp0icon.ico" set "ICON=--icon=%~dp0icon.ico"
 
 py -3 -m PyInstaller --noconfirm --onefile --noconsole --name MECAI-Launcher --clean mecai_launcher.py %ICON%
 
