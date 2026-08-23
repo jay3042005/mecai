@@ -114,3 +114,40 @@ def test_non_scoring_edits_do_not_restamp(client: TestClient):
 
     after = client.get(f"/v1/patients/{pid}/readings?hours=24").json()[0]
     assert after["value_pct"] == before["value_pct"]
+
+
+def test_boot_backfill_heals_pre_fix_archives(client: TestClient, database):
+    """An archive written before restamp existed: complete profile on file,
+    readings still stamped from the empty one it used to be. Startup must
+    reconcile them with no client action at all."""
+    from datetime import UTC, datetime
+
+    pid = "55555555-6666-7777-8888-999999999999"
+    client.post("/v1/patients", json={
+        "patient_id": pid, "display_name": "Legacy", "profile": COMPLETE,
+    })
+    # Simulate the old build: store the reading with an intentionally wrong
+    # stamp instead of going through the scoring path.
+    conn = database.conn
+    conn.execute(
+        """
+        INSERT INTO readings (
+            patient_id, client_id, heart_rate_bpm, spo2_pct, ambient_temp_c,
+            measured_at, received_at, band, value_pct, confidence,
+            model_version, missing_fields, flag_count, flags_json
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """,
+        (
+            pid, "legacy-00000001", 78.0, 97.0, 28.4,
+            datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat(),
+            "unknown", None, "incomplete", "framingham-general-cvd-2008",
+            "[]", 0, "[]",
+        ),
+    )
+    conn.commit()
+
+    from mecai_api import store
+    assert store.backfill_stale_scores(database) >= 1
+
+    stored = client.get(f"/v1/patients/{pid}/readings?hours=24").json()[0]
+    assert stored["confidence"] == "complete"

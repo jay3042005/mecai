@@ -134,6 +134,11 @@ class _MecAppState extends State<MecApp> {
   late EmergencyContacts _contacts;
   SyncService? _syncService;
 
+  /// Last sync state seen by [_onSyncChanged], so the transition INTO
+  /// "up to date" can be distinguished from the notifications that fire on
+  /// every counter tick.
+  SyncState? _lastSyncState;
+
   /// The person whose stores are actually loaded — not the registry's pointer,
   /// which [ProfileRegistry.create] moves before this state ever sees the id.
   late String _loadedProfileId;
@@ -165,7 +170,9 @@ class _MecAppState extends State<MecApp> {
         settings: widget.settings,
         profileStore: _profile,
         store: widget.readings!,
-      )..start();
+      )
+        ..addListener(_onSyncChanged)
+        ..start();
     }
 
     // One controller for the whole app. Four tabs need the same link, the same
@@ -226,6 +233,23 @@ class _MecAppState extends State<MecApp> {
     await widget.settings.setApiBaseUrl(found.baseUrl);
   }
 
+  /// Re-scores when a backup cycle first lands.
+  ///
+  /// The questionnaire may have been saved while the server was unreachable:
+  /// scoring failed quietly, and nothing else re-triggers it — the ring then
+  /// says "incomplete" until an app restart, which is exactly what users
+  /// reported. A completed upload proves the server can hear us now *and* that
+  /// enrolment carried the current questionnaire, so this is the moment a
+  /// fresh score becomes both possible and meaningful.
+  void _onSyncChanged() {
+    final state = _syncService?.state;
+    final wasUpToDate = _lastSyncState == SyncState.upToDate;
+    _lastSyncState = state;
+    if (state == SyncState.upToDate && !wasUpToDate) {
+      unawaited(_controller.onProfileChanged());
+    }
+  }
+
   /// Loads another person's stores and re-binds everything that is theirs.
   ///
   /// Order matters. The old sync service is detached **first**: it listens for
@@ -280,7 +304,10 @@ class _MecAppState extends State<MecApp> {
         _contacts = contacts;
         _syncService = sync;
         _loadedProfileId = id;
+        // The new person's first cycle must count as a fresh transition.
+        _lastSyncState = null;
       });
+      sync?.addListener(_onSyncChanged);
       sync?.start();
       await _controller.switchProfile(
         profileStore: profile,

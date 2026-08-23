@@ -150,6 +150,34 @@ def scoring_inputs_changed(row: sqlite3.Row, profile: RiskProfile) -> bool:
     )
 
 
+def backfill_stale_scores(database: Database) -> int:
+    """Heals stamps left behind by an upgrade: readings stored under a
+    questionnaire that has since changed.
+
+    Deployments that ran pre-restamp code carry rows whose band/confidence were
+    computed from whatever the profile contained at ingest — often an empty
+    one, so the roster says "unknown" forever even though the current profile
+    scores fine. One live assessment per patient detects that cheaply; only a
+    mismatch pays for the full restamp.
+    """
+    healed = 0
+    for summary in list_patients(database):
+        row = get_patient_row(database, summary.patient_id)
+        latest = latest_reading(database, summary.patient_id)
+        if row is None or latest is None:
+            continue
+        profile = profile_from_row(row)
+        current = engine.assess(profile, latest)
+        if (
+            current.band == latest.band
+            and current.confidence == latest.confidence
+            and current.value_pct == latest.value_pct
+        ):
+            continue
+        healed += restamp_patient_scores(database, summary.patient_id, profile)
+    return healed
+
+
 def restamp_patient_scores(
     database: Database,
     patient_id: str,

@@ -99,6 +99,14 @@ async def lifespan(_: FastAPI):
     reading that triggered it may be the only copy.
     """
     database.conn  # noqa: B018 — connects and applies the schema
+
+    # One-time heal for archives written before profile edits re-scored stored
+    # readings: without it, a roster upgraded past that fix keeps saying
+    # "unknown" until someone happens to edit their profile again.
+    healed = store.backfill_stale_scores(database)
+    if healed:
+        print(f"backfill: re-scored {healed} reading(s) against current profiles.", flush=True)
+
     announcer.start()
     try:
         yield
