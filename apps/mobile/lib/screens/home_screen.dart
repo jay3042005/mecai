@@ -62,6 +62,8 @@ class HomeScreen extends StatelessWidget {
           profiles: controller.profileStore,
           syncService: controller.syncService,
           readingStore: controller.store,
+          source: controller.bleSource,
+          controller: controller,
         ),
       ),
     );

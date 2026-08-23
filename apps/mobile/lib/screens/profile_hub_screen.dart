@@ -368,6 +368,7 @@ class ProfileHubScreen extends StatelessWidget {
                             syncService: controller.syncService,
                             readingStore: controller.store,
                             source: controller.bleSource,
+                            controller: controller,
                           ),
                         ),
                       ),

@@ -385,8 +385,12 @@ class MonitorController extends ChangeNotifier {
   Future<void> score() async {
     final reading = latest ?? _emptyReading();
 
-    // 1. Something on screen now.
-    if (_assessment == null || _origin == ScoreOrigin.onDevice) {
+    // 1. Something on screen now — always recomputed while the displayed
+    // basis is invalidated (origin none), so a profile edit is visible in the
+    // same frame even if the server never answers.
+    if (_assessment == null ||
+        _origin == ScoreOrigin.none ||
+        _origin == ScoreOrigin.onDevice) {
       final local = evaluateRiskLocally(profile: profile, reading: reading);
       _assessment = local.assessment;
       _notes = local.notes;
@@ -431,13 +435,29 @@ class MonitorController extends ChangeNotifier {
 
   VitalsReading _emptyReading() => VitalsReading(measuredAt: DateTime.now());
 
-  /// Re-scores after the questionnaire changed. The cached figure no longer
-  /// describes the profile, so it is dropped rather than relabelled.
+  /// Re-scores after the questionnaire changed.
+  ///
+  /// Unconditional invalidation: whatever is on screen was computed from the
+  /// *previous* answers, so keeping it — even labelled cached — invites
+  /// reading a dead figure as current. The next [score] recomputes locally
+  /// immediately (a completed profile shows its band at once; an incomplete
+  /// one shows honest absence) and then lets the server override.
   Future<void> onProfileChanged() async {
-    final entry = _cache.cached;
-    if (entry != null && !entry.matches(profile)) {
-      _origin = ScoreOrigin.none;
-    }
+    _origin = ScoreOrigin.none;
+    _scoredAt = null;
+    await score();
+  }
+
+  /// Re-reads the archive and re-scores, as if these readings had just arrived
+  /// off the watch.
+  ///
+  /// Backdoor writers need this: the sample-data generator inserts into the
+  /// store directly, and [_history] is an in-memory window — without an
+  /// explicit reload the new rows appear only after an app restart, which is
+  /// precisely the "reopen the app" behaviour this app must not demand.
+  Future<void> reloadHistory() async {
+    await _seedFromArchive();
+    notifyListeners();
     await score();
   }
 

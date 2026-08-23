@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/ble_vitals_source.dart';
+import '../data/monitor_controller.dart';
 import '../data/profile_store.dart';
 import '../data/reading_store.dart';
 import '../data/risk_service.dart';
@@ -38,6 +39,7 @@ class SettingsScreen extends StatefulWidget {
     this.syncService,
     this.readingStore,
     this.source,
+    this.controller,
   });
 
   final AppSettings settings;
@@ -54,6 +56,10 @@ class SettingsScreen extends StatefulWidget {
   /// The BLE link, when re-pairing should be offered from here. Null on
   /// platforms where the watch cannot connect at all.
   final BleVitalsSource? source;
+
+  /// Live monitor, when sample data should appear on screen immediately.
+  /// Without it, newly generated readings wait for the next app restart.
+  final MonitorController? controller;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -269,6 +275,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // as it would for readings arriving off a watch.
       widget.syncService?.nudge();
       widget.syncService?.refreshCounts();
+      // And pull the new rows into the live charts now — the archive write
+      // alone only reaches the screen after a restart.
+      await widget.controller?.reloadHistory();
       await _loadArchiveCount();
 
       if (!mounted) return;
