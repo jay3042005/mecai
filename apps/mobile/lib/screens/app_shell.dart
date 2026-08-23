@@ -27,8 +27,8 @@ import '../design/theme.dart';
 import '../design/tokens.dart';
 import '../models/vitals.dart';
 import '../widgets/acute_alert_banner.dart';
-import '../widgets/alerts_popup.dart';
 import '../widgets/mec_bottom_nav.dart';
+import 'alerts_screen.dart';
 import 'analytics_screen.dart';
 import 'home_screen.dart';
 import 'profile_hub_screen.dart';
@@ -129,30 +129,19 @@ class _AppShellState extends State<AppShell> {
     widget.controller.sendSosToWatch();
   }
 
-  /// Alerts is a popup, not a page — it has no `PageView` child, so tapping it
-  /// must not move the pager or leave the destination looking selected.
-  static const _alertsIndex = 2;
+  /// Where the alerts destination sits in the nav — also the banner's target.
+  static const _alertsTabIndex = 2;
 
+  /// Every nav destination is a real page now — alerts included. The index is
+  /// the pager's index, one to one; no offsets to keep in sync.
   void _select(int index) {
-    if (index == _alertsIndex) {
-      showAcuteAlertsPopup(
-        context,
-        flags: widget.controller.acuteFlags,
-        contacts: widget.controller.emergencyContacts,
-        locationService: widget.controller.locationService,
-      );
-      return;
-    }
-    // Alerts occupies slot 2, so every destination after it is one ahead of its
-    // page.
-    final page = index > _alertsIndex ? index - 1 : index;
     if (index == _index) return;
     setState(() => _index = index);
     if (context.reduceMotion) {
-      _pageController.jumpToPage(page);
+      _pageController.jumpToPage(index);
     } else {
       _pageController.animateToPage(
-        page,
+        index,
         duration: MecMotion.fast,
         curve: MecEasing.standard,
       );
@@ -184,21 +173,17 @@ class _AppShellState extends State<AppShell> {
                 child: AcuteAlertBanner(
                   flags: flags,
                   contactsMissing: controller.emergencyContacts.isEmpty,
-                  onView: () => showAcuteAlertsPopup(
-                    context,
-                    flags: flags,
-                    contacts: controller.emergencyContacts,
-                    locationService: controller.locationService,
-                  ),
+                  // The banner opens the same place the nav does: the alerts
+                  // page, not a popup — one mental model for where findings live.
+                  onView: () => _select(_alertsTabIndex),
                 ),
               ),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (page) => setState(
-                    () => _index = page >= _alertsIndex ? page + 1 : page,
-                  ),
+                  onPageChanged: (page) =>
+                      setState(() => _index = page),
                   children: [
                     SafeArea(
                       bottom: false,
@@ -210,6 +195,10 @@ class _AppShellState extends State<AppShell> {
                     SafeArea(
                       bottom: false,
                       child: VitalsScreen(controller: controller),
+                    ),
+                    SafeArea(
+                      bottom: false,
+                      child: AlertsScreen(controller: controller),
                     ),
                     SafeArea(
                       bottom: false,
