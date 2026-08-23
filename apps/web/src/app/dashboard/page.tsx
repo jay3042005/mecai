@@ -248,6 +248,38 @@ export default function DashboardPage() {
     void loadSos();
   }, [loadCohort, loadSos]);
 
+  /**
+   * Live updates without anyone pressing refresh.
+   *
+   * The console is left open on a clinic wall or a second screen; expecting a
+   * clinician to remember to refresh is how a dashboard ends up an hour stale
+   * during exactly the incident it exists for. Polls quietly — no spinner, no
+   * scroll jump, the same loaders a manual refresh uses — and only while the
+   * tab is visible: a hidden tab burning requests every 15 seconds costs
+   * battery for nobody.
+   */
+  useEffect(() => {
+    const AUTO_REFRESH_MS = 15_000;
+
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadCohort();
+      void loadSos();
+    };
+
+    const id = window.setInterval(tick, AUTO_REFRESH_MS);
+    const onVisibilityChange = () => {
+      // Refresh immediately on return to the tab, so the gap never shows.
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [loadCohort, loadSos]);
+
   const refresh = () => {
     setLoading(true);
     void loadCohort();

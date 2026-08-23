@@ -5,8 +5,13 @@
 /// 9.49 on dark), so light mode needs its own review before being offered.
 library;
 
+import 'dart:async' show unawaited;
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'data/assessment_cache.dart';
@@ -180,6 +185,28 @@ class _MecAppState extends State<MecApp> {
     _maybeAutoDiscover();
   }
 
+  /// Asks for every permission the SOS path needs, once, up front.
+  ///
+  /// Historically these were only requested inside the pairing flow — so
+  /// someone who skipped pairing got their first SMS/location dialog at the
+  /// worst possible moment: mid-emergency, behind the SOS countdown. Asking
+  /// here (after either pairing or skip resolves) means an emergency later is
+  /// pure execution. Failures are logged, never fatal: a denied permission
+  /// degrades one channel; a crash on startup loses all of them.
+  Future<void> _requestEssentialPermissions() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await [
+        Permission.sms,
+        Permission.locationWhenInUse,
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+      ].request();
+    } on Object catch (error) {
+      debugPrint('Permission warmup failed (non-fatal). $error');
+    }
+  }
+
   /// One quiet attempt to find the scoring server on the LAN.
   ///
   /// Runs only while the address is still a factory default — someone who has
@@ -297,8 +324,12 @@ class _MecAppState extends State<MecApp> {
               ? PairWatchScreen(
                   source: _source,
                   settings: widget.settings,
-                  onConnected: () => setState(() => _showPairing = false),
+                  onConnected: () {
+                    unawaited(_requestEssentialPermissions());
+                    setState(() => _showPairing = false);
+                  },
                   onSkip: () {
+                    unawaited(_requestEssentialPermissions());
                     widget.settings.setPairingDismissed(true);
                     setState(() => _showPairing = false);
                   },

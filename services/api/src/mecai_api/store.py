@@ -36,7 +36,9 @@ from mecai_api.models import (
     SosEvent,
     SosUpload,
     StoredReading,
+    VitalsReading,
 )
+from mecai_api.risk import engine
 
 #: Fixed-width UTC. See module docstring on why the format is pinned.
 _TS_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
@@ -127,6 +129,89 @@ def profile_from_row(row: sqlite3.Row) -> RiskProfile:
         baseline_systolic_mmhg=row["baseline_systolic_mmhg"],
         family_history_cvd=bool(row["family_history_cvd"]),
     )
+
+
+def scoring_inputs_changed(row: sqlite3.Row, profile: RiskProfile) -> bool:
+    """Whether ``profile`` differs from the stored row in anything the model uses.
+
+    Display-name edits and family history (not a Framingham input) do not count:
+    re-scoring on those would rewrite figures that are still correct.
+    """
+    old = profile_from_row(row)
+    return (
+        old.age != profile.age
+        or str(old.sex) != str(profile.sex)
+        or old.smoker != profile.smoker
+        or old.diabetic != profile.diabetic
+        or old.on_bp_medication != profile.on_bp_medication
+        or old.total_cholesterol_mgdl != profile.total_cholesterol_mgdl
+        or old.hdl_cholesterol_mgdl != profile.hdl_cholesterol_mgdl
+        or old.baseline_systolic_mmhg != profile.baseline_systolic_mmhg
+    )
+
+
+def restamp_patient_scores(
+    database: Database,
+    patient_id: str,
+    profile: RiskProfile,
+    limit: int = 500,
+) -> int:
+    """Re-scores a patient's most recent readings under their *current* profile.
+
+    Readings are stamped at ingest, which is right for model changes — an old
+    stamp preserves what the model of the day said. But when the questionnaire
+    changes, the stored figure answers a question built from inputs the patient
+    has since corrected. Leaving it stale makes the roster, the filters and
+    ``/v1/stats`` report "unknown" for a patient whose detail panel scores fine,
+    because only the detail panel re-scores live.
+
+    Acute flags are untouched: they depend on the reading alone, never on the
+    profile. Returns how many rows were restamped.
+    """
+    rows = database.conn.execute(
+        """
+        SELECT client_id, systolic_mmhg, diastolic_mmhg, heart_rate_bpm,
+               spo2_pct, temperature_c, ambient_temp_c, motion_artifact,
+               measured_at
+        FROM readings WHERE patient_id = ?
+        ORDER BY measured_at DESC LIMIT ?
+        """,
+        (patient_id, limit),
+    ).fetchall()
+
+    restamped = 0
+    with database.transaction() as conn:
+        for row in rows:
+            reading = VitalsReading(
+                systolic_mmhg=row["systolic_mmhg"],
+                diastolic_mmhg=row["diastolic_mmhg"],
+                heart_rate_bpm=row["heart_rate_bpm"],
+                spo2_pct=row["spo2_pct"],
+                temperature_c=row["temperature_c"],
+                ambient_temp_c=row["ambient_temp_c"],
+                motion_artifact=bool(row["motion_artifact"]),
+                measured_at=parse_ts(row["measured_at"]),
+            )
+            assessment = engine.assess(profile, reading)
+            cursor = conn.execute(
+                """
+                UPDATE readings SET
+                    band = ?, value_pct = ?, confidence = ?,
+                    model_version = ?, missing_fields = ?
+                WHERE patient_id = ? AND client_id = ?
+                """,
+                (
+                    str(assessment.band),
+                    assessment.value_pct,
+                    str(assessment.confidence),
+                    assessment.model_version,
+                    encode_list(assessment.missing_fields),
+                    patient_id,
+                    row["client_id"],
+                ),
+            )
+            restamped += cursor.rowcount
+    return restamped
 
 
 def get_patient_row(database: Database, patient_id: str) -> sqlite3.Row | None:

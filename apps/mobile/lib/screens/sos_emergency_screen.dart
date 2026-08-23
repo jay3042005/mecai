@@ -86,7 +86,7 @@ enum _SosPhase {
   String get title => switch (this) {
         _SosPhase.countdown => '',
         _SosPhase.sending => 'Sending emergency SMS…',
-        _SosPhase.sent => 'Emergency SMS sent',
+        _SosPhase.sent => 'Alert sent',
         _SosPhase.failed => 'Could not send the SMS',
       };
 }
@@ -195,10 +195,12 @@ class _SosEmergencyScreenState extends State<SosEmergencyScreen>
     unawaited(
       widget.controller.dispatchSms().then((result) {
         if (!mounted) return;
-        setState(() {
-          _dispatch = result;
-          if (!result.outcome.delivered) _phase = _SosPhase.failed;
-        });
+        setState(() => _dispatch = result);
+        // No "failed" phase on SMS trouble alone: the alert itself was
+        // recorded with its location and uploaded the moment the countdown
+        // ended, so responders on the dashboard already see it. Reporting
+        // that as failure would tell someone in an emergency that nothing
+        // happened when the part that matters did.
       }),
     );
   }
@@ -422,17 +424,37 @@ class _SosEmergencyScreenState extends State<SosEmergencyScreen>
             ],
           ),
           const SizedBox(height: MecSpace.s4),
+          // Lead with the part that always happened: the alert and its
+          // location reached the dashboard at the end of the countdown. SMS is
+          // a second, best-effort channel on top of that.
           Text(
-            // Names who it reached. "Sent" alone leaves the user wondering
-            // whether it went to the right person.
-            'Sent to ${_dispatch?.sentTo.join(', ') ?? 'your contacts'}',
+            'Recorded with your location — visible to responders on the '
+            'dashboard now.',
             textAlign: TextAlign.center,
             style: sub,
           ),
+          if (_dispatch?.sentTo.isNotEmpty ?? false) ...[
+            const SizedBox(height: MecSpace.s4),
+            Text(
+              'SMS sent to ${_dispatch!.sentTo.join(', ')}',
+              textAlign: TextAlign.center,
+              style: sub,
+            ),
+          ],
           if (_dispatch?.failedFor.isNotEmpty ?? false) ...[
             const SizedBox(height: MecSpace.s4),
             Text(
-              'Could not reach ${_dispatch!.failedFor.join(', ')}',
+              'SMS could not reach ${_dispatch!.failedFor.join(', ')} — '
+              'check signal or SIM credit. Responders still see this alert.',
+              textAlign: TextAlign.center,
+              style: MecType.label.copyWith(color: MecRiskBand.moderate.color),
+            ),
+          ] else if (_dispatch != null &&
+              _dispatch!.outcome == DispatchOutcome.failed) ...[
+            const SizedBox(height: MecSpace.s4),
+            Text(
+              'No SMS went out — check that a SIM is active. Your alert and '
+              'location are already on the dashboard.',
               textAlign: TextAlign.center,
               style: MecType.label.copyWith(color: MecRiskBand.moderate.color),
             ),

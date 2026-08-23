@@ -274,7 +274,14 @@ async def upsert_patient(payload: PatientUpsert, db: Db) -> PatientSummary:
     strand every reading recorded before the phone first reached the network, and
     on a rural device that is the normal case.
     """
+    previous = store.get_patient_row(db, payload.patient_id)
     store.upsert_patient(db, payload)
+    if previous is not None and store.scoring_inputs_changed(previous, payload.profile):
+        # The questionnaire changed, so every stored figure for this patient was
+        # computed from inputs they have since corrected. Restamping keeps the
+        # roster, filters and stats consistent with what the detail panel — which
+        # always scored live — already shows.
+        store.restamp_patient_scores(db, payload.patient_id, payload.profile)
     summary = store.patient_summary(db, payload.patient_id)
     if summary is None:  # pragma: no cover — just written above
         raise HTTPException(status_code=500, detail="Patient was not persisted.")
@@ -349,6 +356,16 @@ async def sync_readings(payload: SyncRequest, db: Db) -> SyncResponse:
     stored, duplicates, rejected = store.insert_readings(
         db, payload.patient_id, payload.readings, assessments
     )
+
+    # The batch carried an updated questionnaire: readings already stored under
+    # the previous inputs are re-scored so the roster never contradicts the
+    # detail panel. First-contact enrolments have nothing stored yet.
+    if (
+        row is not None
+        and profile is not None
+        and store.scoring_inputs_changed(row, profile)
+    ):
+        store.restamp_patient_scores(db, payload.patient_id, profile)
 
     return SyncResponse(
         patient_id=payload.patient_id,
