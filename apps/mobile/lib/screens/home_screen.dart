@@ -22,6 +22,9 @@ library;
 import 'package:flutter/material.dart';
 
 import '../data/monitor_controller.dart';
+import '../data/server_discovery.dart';
+import '../data/server_status.dart';
+import '../data/settings.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
 import '../models/vitals.dart';
@@ -37,9 +40,10 @@ import 'profile_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.controller});
+  const HomeScreen({super.key, required this.controller, required this.serverStatus});
 
   final MonitorController controller;
+  final ServerStatus serverStatus;
 
   void _openProfile(BuildContext context) {
     Navigator.of(context).push(
@@ -114,7 +118,30 @@ class HomeScreen extends StatelessWidget {
         wearing: controller.wearing,
         onOpenSettings: () => _openSettings(context),
         onTriggerSos: _triggerSos,
+        serverStatus: serverStatus,
+        onServerPress: () => _showServerSheet(context),
       );
+
+  /// The connect sheet behind the header's server button.
+  ///
+  /// One tap runs the full two-stage discovery; the other hands off to
+  /// Settings for a typed address. Either way [ServerStatus.probe] is what
+  /// turns the header icon green, so the sheet never claims success the
+  /// indicator does not corroborate.
+  void _showServerSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => _ServerSheet(
+        status: serverStatus,
+        settings: controller.settings,
+        onOpenSettings: () {
+          Navigator.of(sheetContext).pop();
+          _openSettings(context);
+        },
+      ),
+    );
+  }
 
   /// First load only. Geometry matches [_content] so nothing shifts on arrival.
   List<Widget> _skeleton(BuildContext context) => [
@@ -263,5 +290,123 @@ class _ScoreProvenance extends StatelessWidget {
       return '${elapsed.inHours} hour${elapsed.inHours == 1 ? '' : 's'} ago';
     }
     return '${elapsed.inDays} day${elapsed.inDays == 1 ? '' : 's'} ago';
+  }
+}
+
+/// The server connect sheet.
+class _ServerSheet extends StatefulWidget {
+  const _ServerSheet({
+    required this.status,
+    required this.settings,
+    required this.onOpenSettings,
+  });
+
+  final ServerStatus status;
+  final AppSettings settings;
+  final VoidCallback onOpenSettings;
+
+  @override
+  State<_ServerSheet> createState() => _ServerSheetState();
+}
+
+class _ServerSheetState extends State<_ServerSheet> {
+  bool _searching = false;
+  String _stage = '';
+
+  Future<void> _autoConnect() async {
+    if (_searching) return;
+    setState(() {
+      _searching = true;
+      _stage = 'Listening for the server…';
+    });
+
+    final found = await discoverMecaiServer(onStage: (stage) {
+      if (!mounted) return;
+      setState(() {
+        _stage = stage == DiscoveryStage.mdns
+            ? 'Listening for the server…'
+            : 'Scanning this Wi-Fi…';
+      });
+    });
+
+    if (found == null) {
+      if (!mounted) return;
+      setState(() => _searching = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+          'No MEC-AI server found on this Wi-Fi. Make sure the laptop is '
+          'running, then try again or enter the address.',
+        ),
+      ));
+      return;
+    }
+
+    await widget.settings.setApiBaseUrl(found.baseUrl);
+    await widget.status.probe();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Connected to ${found.baseUrl}')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mec;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListenableBuilder(
+              listenable: widget.status,
+              builder: (context, _) {
+                final online = widget.status.link == ServerLink.online;
+                return Row(
+                  children: [
+                    Icon(
+                      Icons.dns_rounded,
+                      size: 20,
+                      color:
+                          online ? MecRiskBand.low.color : c.inkSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        online
+                            ? 'Connected — ${widget.status.configuredAddress}'
+                            : 'Server not found',
+                        style: MecType.body.copyWith(color: c.inkPrimary),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _searching ? null : _autoConnect,
+              icon: _searching
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.radar, size: 18),
+              label: Text(
+                _searching ? _stage : 'Find server automatically',
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: widget.onOpenSettings,
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Enter address manually'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

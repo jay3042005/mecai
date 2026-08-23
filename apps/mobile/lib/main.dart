@@ -24,6 +24,7 @@ import 'data/profile_store.dart';
 import 'data/reading_store.dart';
 import 'data/risk_service.dart';
 import 'data/server_discovery.dart';
+import 'data/server_status.dart';
 import 'data/settings.dart';
 import 'data/sync_service.dart';
 import 'design/theme.dart';
@@ -122,6 +123,7 @@ class MecApp extends StatefulWidget {
 class _MecAppState extends State<MecApp> {
   late final BleVitalsSource _source;
   late final RiskService _riskService;
+  late final ServerStatus _serverStatus;
   late final MonitorController _controller;
 
   /// Open archives by profile id. Kept open rather than closed on switch:
@@ -158,6 +160,7 @@ class _MecAppState extends State<MecApp> {
     }
     _source = BleVitalsSource();
     _riskService = RiskService(settings: widget.settings);
+    _serverStatus = ServerStatus(_riskService, widget.settings);
     // Pairing is asked once. A completed pairing or an explicit long-hold
     // "continue without the watch" both end it; Settings offers pairing again.
     _showPairing =
@@ -189,6 +192,7 @@ class _MecAppState extends State<MecApp> {
       syncService: _syncService,
     );
     _controller.start();
+    _serverStatus.start();
     _maybeAutoDiscover();
   }
 
@@ -231,6 +235,9 @@ class _MecAppState extends State<MecApp> {
     );
     if (found == null || !mounted) return;
     await widget.settings.setApiBaseUrl(found.baseUrl);
+    // Turn the header's server indicator green the moment adoption lands,
+    // rather than waiting out the next 30-second probe.
+    unawaited(_serverStatus.probe());
   }
 
   /// Re-scores when a backup cycle first lands.
@@ -326,6 +333,7 @@ class _MecAppState extends State<MecApp> {
   @override
   void dispose() {
     _controller.dispose();
+    _serverStatus.dispose();
     _source.dispose();
     _riskService.dispose();
     _syncService?.dispose();
@@ -365,6 +373,7 @@ class _MecAppState extends State<MecApp> {
                   controller: _controller,
                   registry: widget.registry,
                   onSwitchProfile: _switchTo,
+                  serverStatus: _serverStatus,
                 ),
     );
   }

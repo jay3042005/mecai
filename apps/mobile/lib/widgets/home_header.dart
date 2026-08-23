@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../data/server_status.dart';
 import '../data/vitals_source.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
@@ -21,12 +22,19 @@ class HomeHeader extends StatelessWidget {
     required this.wearing,
     required this.onOpenSettings,
     required this.onTriggerSos,
+    required this.serverStatus,
+    required this.onServerPress,
   });
 
   final LinkState linkState;
   final bool wearing;
   final VoidCallback onOpenSettings;
   final VoidCallback onTriggerSos;
+
+  /// Live answer to "can we reach the scoring server right now?" — drives the
+  /// green/white server button beside SOS.
+  final ServerStatus serverStatus;
+  final VoidCallback onServerPress;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +89,8 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: MecSpace.s8),
+        _ServerLinkButton(status: serverStatus, onPressed: onServerPress),
+        const SizedBox(width: MecSpace.s8),
         MecPress(
           child: IconButton.filledTonal(
             onPressed: onOpenSettings,
@@ -132,6 +142,48 @@ class _LinkChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The scoring server's reach, as one tappable icon.
+///
+/// Green: `/health` answered recently — auto-find or a saved address works.
+/// White: nothing answered. The word "server" rides the tooltip and the sheet
+/// behind a press, because an unlabelled dot-coloured icon fails the same
+/// readability rule the risk indicator already follows.
+///
+/// Pressing it never just colours harder — it opens the connect sheet, where
+/// one tap runs discovery (announcement first, then a subnet sweep) and the
+/// other opens manual entry.
+class _ServerLinkButton extends StatelessWidget {
+  const _ServerLinkButton({required this.status, required this.onPressed});
+
+  final ServerStatus status;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mec;
+    return ListenableBuilder(
+      listenable: status,
+      builder: (context, _) {
+        final online = status.link == ServerLink.online;
+        return MecPress(
+          child: IconButton.filledTonal(
+            onPressed: onPressed,
+            tooltip: online
+                ? 'Server connected — ${status.address}'
+                : 'Server not found — tap to connect',
+            icon: Icon(
+              online ? Icons.dns_rounded : Icons.dns_outlined,
+              size: 20,
+              // Green only when the server actually answered; white otherwise.
+              color: online ? MecRiskBand.low.color : c.inkSecondary,
+            ),
+          ),
+        );
+      },
     );
   }
 }

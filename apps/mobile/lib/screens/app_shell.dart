@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 
 import '../data/monitor_controller.dart';
 import '../data/profile_registry.dart';
+import '../data/server_status.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
 import '../models/vitals.dart';
@@ -40,10 +41,15 @@ class AppShell extends StatefulWidget {
     required this.controller,
     required this.registry,
     required this.onSwitchProfile,
+    required this.serverStatus,
   });
 
   final MonitorController controller;
   final ProfileRegistry registry;
+
+  /// Live reachability of the scoring server — the header's green/white
+  /// server button reads this.
+  final ServerStatus serverStatus;
 
   /// See [ProfileHubScreen.onSwitchProfile]; passed through to the profile tab.
   final Future<void> Function(String id, bool created) onSwitchProfile;
@@ -196,7 +202,10 @@ class _AppShellState extends State<AppShell> {
                   children: [
                     SafeArea(
                       bottom: false,
-                      child: HomeScreen(controller: controller),
+                      child: HomeScreen(
+                        controller: controller,
+                        serverStatus: widget.serverStatus,
+                      ),
                     ),
                     SafeArea(
                       bottom: false,
