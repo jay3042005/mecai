@@ -22,9 +22,13 @@ import 'dart:async';
 import 'package:bonsoir/bonsoir.dart';
 import 'package:flutter/foundation.dart';
 
-/// The service type the API advertises. Must match
-/// [mecai_api.mdns.SERVICE_TYPE] exactly, trailing dot included.
-const String mecaiServiceType = '_mecai._tcp.local.';
+/// The service type the API advertises, as Android's NsdManager spells it.
+///
+/// Domain-less deliberately: NsdManager rejects the `.local.` suffix
+/// ("invalid type"), which belongs to the *registration* spelling used by
+/// python-zeroconf on the server (`_mecai._tcp.local.`). They name the same
+/// service on the wire — mDNS always resolves inside .local.
+const String mecaiServiceType = '_mecai._tcp';
 
 /// One found scoring server.
 @immutable
@@ -66,27 +70,37 @@ Future<DiscoveredServer?> discoverMecaiServer({
 
     final completer = Completer<DiscoveredServer?>();
     late final StreamSubscription<BonsoirDiscoveryEvent> subscription;
-    subscription = discovery.eventStream!.listen((event) {
-      if (completer.isCompleted) return;
-      switch (event) {
-        case BonsoirDiscoveryServiceFoundEvent(:final service):
-          // Found announcements carry only the name; resolution performs the
-          // DNS exchange that produces the address.
-          service.resolve(discovery.serviceResolver);
-        case BonsoirDiscoveryServiceResolvedEvent(:final service):
-          final host = service.host;
-          if (host != null && host.isNotEmpty) {
-            completer.complete(
-              DiscoveredServer(
-                name: service.name,
-                baseUrl: 'http://$host:${service.port}',
-              ),
-            );
-          }
-        default:
-          break;
-      }
-    });
+    subscription = discovery.eventStream!.listen(
+      (event) {
+        if (completer.isCompleted) return;
+        switch (event) {
+          case BonsoirDiscoveryServiceFoundEvent(:final service):
+            // Found announcements carry only the name; resolution performs the
+            // DNS exchange that produces the address.
+            service.resolve(discovery.serviceResolver);
+          case BonsoirDiscoveryServiceResolvedEvent(:final service):
+            final host = service.host;
+            if (host != null && host.isNotEmpty) {
+              completer.complete(
+                DiscoveredServer(
+                  name: service.name,
+                  baseUrl: 'http://$host:${service.port}',
+                ),
+              );
+            }
+          default:
+            break;
+        }
+      },
+      // Discovery failures surface HERE as well as through start()'s future —
+      // an unhandled stream error crashes the VM in debug builds. Treat it as
+      // "not found": discovery is a convenience over typing the address.
+      onError: (Object error) {
+        debugPrint('ServerDiscovery: $error');
+        if (!completer.isCompleted) completer.complete(null);
+      },
+      cancelOnError: true,
+    );
 
     final result =
         await completer.future.timeout(timeout, onTimeout: () => null);
