@@ -64,6 +64,11 @@ def build_service_info(port: int) -> tuple[str, str, int, dict[str, str]]:
     return (f"{SERVICE_NAME}.{SERVICE_TYPE}", SERVICE_TYPE, port, props)
 
 
+def _say(message: str) -> None:
+    """Visible in the launcher's log panel; flushed so it is never swallowed."""
+    print(message, flush=True)
+
+
 class ServerAnnouncer:
     """Registers the service on start, unregisters cleanly on stop.
 
@@ -90,12 +95,19 @@ class ServerAnnouncer:
     def _register(self) -> None:
         try:
             from zeroconf import ServiceInfo, Zeroconf
-        except ImportError:  # pragma: no cover - zeroconf ships as a hard dep
+        except ImportError:
+            # The venv predates the dependency (an install made before
+            # zeroconf landed in pyproject.toml). Silent would leave a phone
+            # finding nothing while every log line looks healthy.
+            _say("mDNS SKIPPED: zeroconf not installed in this venv — "
+                 "run: .venv\\Scripts\\python.exe -m pip install -e services/api")
             return
 
         name, service_type, port, props = build_service_info(self._port)
         ip = local_ip()
         if ip is None or self._stopping:
+            _say("mDNS SKIPPED: no LAN address found (loopback only?) — "
+                 "phones cannot reach this machine anyway.")
             return
         info = ServiceInfo(
             service_type,
@@ -114,8 +126,12 @@ class ServerAnnouncer:
                 zc.register_service(info)
                 self._zc = zc
                 self._info = info
-        except OSError as error:  # pragma: no cover - depends on host network
-            print(f"mDNS registration skipped: {error}")
+        except OSError as error:
+            _say(f"mDNS registration failed: {error} — if this persists, "
+                 "allow python.exe through Windows Firewall on Private networks.")
+            return
+        _say(f"mDNS: advertising '{SERVICE_NAME}' as http://{ip}:{self._port} "
+             f"({service_type}) — phones can now auto-find this server.")
 
     def stop(self) -> None:
         with self._lock:
