@@ -41,6 +41,8 @@ echo.
 
 set "MECAI_ENABLE_MOCK_ENDPOINTS=false"
 set "MECAI_DATABASE_PATH=%API_DIR%\.data\mecai.db"
+rem The mDNS advertisement must name the same port uvicorn binds.
+set "MECAI_PORT=8000"
 "%VENV%\Scripts\python.exe" -m uvicorn mecai_api.main:app --host 0.0.0.0 --port 8000
 exit /b 0
 

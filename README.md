@@ -66,6 +66,19 @@ emergency contacts, readings archive, and patient id — so each appears as a
 separate row on the clinician dashboard. A pre-multi-profile install keeps its
 identity and data untouched on upgrade.
 
+**Pairing is asked once, never forced.** The setup screen has no Skip button:
+press-and-hold *Scan & Connect* for three seconds to continue without a watch.
+The choice is remembered; pairing stays available in *Settings → MEC-AI watch*.
+
+**Finding the server.** The API announces `_mecai._tcp` over mDNS on startup,
+and Settings offers *Find server automatically*. Discovery runs at boot while
+the address is still a factory default; a typed address always wins.
+
+**Sample data.** *Settings → Sample data → Generate* writes two days of
+back-dated readings for the current profile through the normal archive, so
+backup uploads them and the dashboard fills in. Ids derive from timestamps, so
+regenerating deduplicates instead of doubling history.
+
 **Setting the server address.** Tap the person icon → *Settings* → enter the address
 → *Save and test connection*. A bare IP works; `http://` and `:8000` are filled in
 automatically, and the setting persists across restarts.

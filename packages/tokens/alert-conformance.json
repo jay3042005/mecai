@@ -1,0 +1,422 @@
+{
+  "$generated": "GENERATED — DO NOT EDIT. Source: packages/tokens/tokens.json. Regenerate: node packages/tokens/generate.mjs",
+  "$purpose": "Cross-language conformance vectors. The Dart and Python acute-flag evaluators must both satisfy every case. expect=null means no flag for that vital. `reading` uses the API's snake_case wire format.",
+  "cases": [
+    {
+      "id": "spo2/89",
+      "reading": {
+        "spo2_pct": 89,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "SpO2",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "spo2/90",
+      "reading": {
+        "spo2_pct": 90,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "SpO2",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "spo2/94.9",
+      "reading": {
+        "spo2_pct": 94.9,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "SpO2",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "spo2/95",
+      "reading": {
+        "spo2_pct": 95,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "spo2/98",
+      "reading": {
+        "spo2_pct": 98,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "heartRate/39",
+      "reading": {
+        "heart_rate_bpm": 39,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "heartRate/40",
+      "reading": {
+        "heart_rate_bpm": 40,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "heartRate/45",
+      "reading": {
+        "heart_rate_bpm": 45,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "heartRate/50",
+      "reading": {
+        "heart_rate_bpm": 50,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "heartRate/55",
+      "reading": {
+        "heart_rate_bpm": 55,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "heartRate/80",
+      "reading": {
+        "heart_rate_bpm": 80,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "heartRate/119",
+      "reading": {
+        "heart_rate_bpm": 119,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "heartRate/120",
+      "reading": {
+        "heart_rate_bpm": 120,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "heartRate/149",
+      "reading": {
+        "heart_rate_bpm": 149,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "heartRate/150",
+      "reading": {
+        "heart_rate_bpm": 150,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Heart rate",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "temperature/34.5",
+      "reading": {
+        "temperature_c": 34.5,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "temperature/35",
+      "reading": {
+        "temperature_c": 35,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "temperature/35.5",
+      "reading": {
+        "temperature_c": 35.5,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "info"
+      }
+    },
+    {
+      "id": "temperature/36",
+      "reading": {
+        "temperature_c": 36,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "info"
+      }
+    },
+    {
+      "id": "temperature/36.1",
+      "reading": {
+        "temperature_c": 36.1,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "temperature/36.7",
+      "reading": {
+        "temperature_c": 36.7,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "temperature/37.4",
+      "reading": {
+        "temperature_c": 37.4,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "temperature/37.5",
+      "reading": {
+        "temperature_c": 37.5,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "temperature/38.9",
+      "reading": {
+        "temperature_c": 38.9,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "temperature/39",
+      "reading": {
+        "temperature_c": 39,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Temperature",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "bloodPressure/normal",
+      "reading": {
+        "systolic_mmhg": 118,
+        "diastolic_mmhg": 76,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "bloodPressure/stage1-both",
+      "reading": {
+        "systolic_mmhg": 130,
+        "diastolic_mmhg": 80,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "info"
+      }
+    },
+    {
+      "id": "bloodPressure/stage1-systolic-only",
+      "reading": {
+        "systolic_mmhg": 132,
+        "diastolic_mmhg": 78,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "info"
+      }
+    },
+    {
+      "id": "bloodPressure/stage1-diastolic-only",
+      "reading": {
+        "systolic_mmhg": 118,
+        "diastolic_mmhg": 80,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "info"
+      }
+    },
+    {
+      "id": "bloodPressure/stage2-both",
+      "reading": {
+        "systolic_mmhg": 140,
+        "diastolic_mmhg": 90,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "bloodPressure/stage2-systolic-only",
+      "reading": {
+        "systolic_mmhg": 145,
+        "diastolic_mmhg": 85,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "bloodPressure/stage2-diastolic-only",
+      "reading": {
+        "systolic_mmhg": 125,
+        "diastolic_mmhg": 90,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "warning"
+      }
+    },
+    {
+      "id": "bloodPressure/crisis-both",
+      "reading": {
+        "systolic_mmhg": 180,
+        "diastolic_mmhg": 120,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "bloodPressure/crisis-systolic-only",
+      "reading": {
+        "systolic_mmhg": 185,
+        "diastolic_mmhg": 95,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "bloodPressure/crisis-diastolic-only",
+      "reading": {
+        "systolic_mmhg": 140,
+        "diastolic_mmhg": 120,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": {
+        "vital": "Blood pressure",
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "bloodPressure/systolic-only-unstageable",
+      "reading": {
+        "systolic_mmhg": 185,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "ambient/18",
+      "reading": {
+        "ambient_temp_c": 18,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "ambient/24",
+      "reading": {
+        "ambient_temp_c": 24,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "ambient/28",
+      "reading": {
+        "ambient_temp_c": 28,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "ambient/34",
+      "reading": {
+        "ambient_temp_c": 34,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    },
+    {
+      "id": "ambient/41",
+      "reading": {
+        "ambient_temp_c": 41,
+        "measured_at": "2026-08-18T09:00:00Z"
+      },
+      "expect": null
+    }
+  ]
+}

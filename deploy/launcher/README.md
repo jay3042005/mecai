@@ -26,8 +26,9 @@ py -3 -m PyInstaller --noconsole --onefile --name MECAI-Launcher mecai_launcher.
 ## For the client
 1. Put the whole `MECAI` folder on the **Desktop** (Downloads copy is ignored by auto-detect, so move it out of Downloads).
 2. Double-click `MECAI-Launcher.exe` inside it — or click **★ Create Desktop Shortcut** in the launcher.
-3. Click **Auto-detect** if needed (it will pick `Desktop/MECAI`), then **Start Both**.
-4. Read the LAN URLs in the Network card, enter the API one into the Flutter app's server setting (e.g. `http://192.168.1.42:8000`).
-5. **Update (git pull)** when you push a new version — no need to re-send the zip if the client has git.
+3. **First start only:** Windows Firewall asks to allow the API. Click **Allow** — and choose **Private networks** if both boxes are shown. Declining this blocks phones from connecting *and* blocks the app's "Find server automatically" (mDNS), which is why a "server not found" on the phone usually traces back to here.
+4. Click **Auto-detect** if needed (it will pick `Desktop/MECAI`), then **Start Both**.
+5. The Flutter app finds the server on its own via mDNS — open Settings → *Find server automatically* if it ever misses one.
+6. **Update (git pull)** when you push a new version — no need to re-send the zip if the client has git.
 
 No terminal window is needed; the launcher stays as the only window. Logs are in the bottom panel. If something fails, Copy log and send it back.

@@ -1041,6 +1041,23 @@ Write-Host "OK $lnk"
         # npm deps: run hidden pnpm install or npm install if lock changed
         def _do():
             try:
+                # Python deps first: a pull can add requirements to
+                # services/api/pyproject.toml (zeroconf for server discovery
+                # did), and the API imports them at startup. Re-running the
+                # editable install is a fast no-op when everything is already
+                # satisfied.
+                api_dir = root / "services/api"
+                venv_py = get_venv_python(api_dir)
+                if venv_py is None:
+                    self.log("[update] no API venv yet — it will be created on next Start API")
+                else:
+                    self.log("[update] refreshing API dependencies (pip install -e)…")
+                    code = subprocess.call(
+                        [str(venv_py), "-m", "pip", "install", "-q", "-e", str(api_dir)],
+                        creationflags=creation_flags(),
+                    )
+                    self.log(f"[update] pip exit {code}")
+
                 web_dir = root / "apps/web"
                 is_win = sys.platform == "win32"
                 if (root / "pnpm-lock.yaml").exists():
@@ -1053,9 +1070,9 @@ Write-Host "OK $lnk"
                 elif (web_dir / "package.json").exists():
                     self.log("[update] npm install --prefix apps/web…")
                     if is_win:
-                        code = subprocess.call(f'npm install --prefix "{web_dir}"', shell=True, creationflags=creation_flags())
+                        code = subprocess.call(f'npm install --prefix "{web_dir}"', shell=True, cwd=str(root), creationflags=creation_flags())
                     else:
-                        code = subprocess.call(["npm", "install", "--prefix", str(web_dir)], creationflags=creation_flags())
+                        code = subprocess.call(["npm", "install", "--prefix", str(web_dir)], cwd=str(root), creationflags=creation_flags())
                     self.log(f"[update] npm exit {code}")
                 self.log("[update] done. Click Start Both to relaunch.")
                 self.bottom.config(text="Update complete")

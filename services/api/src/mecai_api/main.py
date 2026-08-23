@@ -18,6 +18,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from mecai_api import __version__, mock, store
 from mecai_api.db import Database
+from mecai_api.mdns import ServerAnnouncer
 from mecai_api.models import (
     AssessmentRequest,
     AssessmentResponse,
@@ -63,10 +64,24 @@ class Settings(BaseSettings):
     #: ``POST /v1/admin/prune``. SOS events are never pruned.
     retention_days: int = 365
 
+    #: Port the server is reachable on. uvicorn owns the actual bind; this value
+    #: only feeds the mDNS advertisement, so it must match whatever ``--port``
+    #: was passed. start-api.sh / the Windows launcher keep the two in step via
+    #: MECAI_PORT.
+    port: int = 8000
+
+    #: Stop advertising on the LAN. Discovery is how phones find this server
+    #: without a typed IP, so leave it off only deliberately.
+    disable_mdns: bool = False
+
 
 settings = Settings()
 
 database = Database(settings.database_path)
+
+#: LAN advertisement for phone auto-discovery (``_mecai._tcp``). Created here so
+#: the lifespan can start and stop it with everything else.
+announcer = ServerAnnouncer(port=settings.port, enabled=not settings.disable_mdns)
 
 
 def get_db() -> Database:
@@ -84,8 +99,14 @@ async def lifespan(_: FastAPI):
     reading that triggered it may be the only copy.
     """
     database.conn  # noqa: B018 — connects and applies the schema
-    yield
-    database.close()
+    announcer.start()
+    try:
+        yield
+    finally:
+        # Unregister before closing: a server that stops answering should stop
+        # being discoverable in the same moment.
+        announcer.stop()
+        database.close()
 
 
 app = FastAPI(

@@ -37,7 +37,10 @@ jobs:
       - name: Build API executable
         shell: pwsh
         run: |
-          uv run --directory services/api --with pyinstaller pyinstaller --noconfirm --onefile --name MEC-AI-API --paths services/api/src --collect-all uvicorn --collect-all fastapi services/api/src/mecai_api/__main__.py
+          # --collect-all zeroconf: the mDNS advertiser imports it lazily inside
+          # functions; collecting explicitly guarantees its data/metadata ship
+          # in the onefile exe rather than failing at first LAN scan.
+          uv run --directory services/api --with pyinstaller pyinstaller --noconfirm --onefile --name MEC-AI-API --paths services/api/src --collect-all uvicorn --collect-all fastapi --collect-all zeroconf services/api/src/mecai_api/__main__.py
       - name: Build launcher (no-console GUI)
         shell: pwsh
         run: |

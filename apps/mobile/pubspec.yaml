@@ -1,0 +1,85 @@
+name: mecai_mobile
+description: "MEC-AI — AI-driven cardiovascular risk monitoring for the MEC-AI wearable cuff."
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # API client for services/api. Deliberately the only network dependency —
+  # BLE and geolocation packages land with the hardware milestone, behind the
+  # VitalsSource interface in lib/data/.
+  http: ^1.2.0
+
+  # Persists the API address so the connection survives a restart. A server
+  # setting that resets every launch is worse than no setting.
+  shared_preferences: ^2.3.0
+
+  # Finds the scoring server on the LAN via mDNS/Bonjour (_mecai._tcp), so a
+  # user never has to read an IP off ipconfig and type it on a phone keyboard.
+  # Uses Android's NsdManager — the platform path that keeps working on
+  # Android 10+ — and native Bonjour elsewhere.
+  bonsoir: ^6.1.0
+
+  # BLE connectivity to the MEC-AI watch (ESP32-S3).
+  flutter_blue_plus: ^1.35.2
+
+  # Runtime permission requests (Bluetooth, location for BLE scanning).
+  permission_handler: ^11.3.0
+
+  # On-device readings archive. The phone is the system of record until a reading
+  # is acknowledged by the server: BLE arrives whether or not there is a network,
+  # and holding readings in widget state lost every one of them on app restart.
+  sqflite: ^2.4.2
+
+  # Joins the databases directory to the filename. Comes in transitively with
+  # sqflite; declared because this package imports it directly.
+  path: ^1.9.0
+
+  # GPS for the SOS alert. The spec requires the emergency message to carry the
+  # user's current location, and an alert that says "help" without saying where is
+  # of limited use to a responder.
+  geolocator: ^13.0.2
+
+  # Sends the emergency SMS directly, with no composer and no user tap. Backed by
+  # Android's SEND_SMS permission, which is exactly what it is for — the alert has
+  # to go out when the watch button is pressed, and the user may not be in a state
+  # to confirm a dialog.
+  #
+  # Android only. iOS exposes no API for programmatic SMS at all, so the send is
+  # guarded by a platform check rather than failing at runtime.
+  another_telephony: ^0.4.1
+  flutter_foreground_task: ^10.0.0
+  flutter_local_notifications: ^22.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Runs the real SQLite engine in tests. The archive's guarantees — that pruning
+  # never touches an unsynced row, that a limit keeps the newest readings — are
+  # properties of the SQL, so a fake store would only test the fake.
+  sqflite_common_ffi: ^2.3.0
+
+flutter:
+  uses-material-design: true
+
+  # Design tokens specify Inter (docs/design.md §3.4). Until the font files are
+  # vendored here, Flutter falls back to the platform sans — which is the
+  # documented fallback, so the app is correct either way.
+  #
+  # fonts:
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Inter-SemiBold.ttf
+  #         weight: 600

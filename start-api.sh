@@ -15,6 +15,8 @@ if [[ ! -x "$api_dir/.venv/bin/python" ]]; then
 fi
 
 export MECAI_ENABLE_MOCK_ENDPOINTS="${MECAI_ENABLE_MOCK_ENDPOINTS:-false}"
+# The mDNS advertisement must name the same port uvicorn binds.
+export MECAI_PORT="$port"
 printf 'MEC-AI API: http://0.0.0.0:%s\n' "$port"
 lan_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || ip -4 addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -n1 || echo "localhost")"
 printf 'LAN address: http://%s:%s\n' "$lan_ip" "$port"
