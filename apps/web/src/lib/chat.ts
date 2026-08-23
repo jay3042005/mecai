@@ -33,6 +33,7 @@ export interface ChatContext {
     openSos: number;
     patientsWithAlerts: number;
     bandCounts: Record<string, number>;
+    alertedPatients?: { name: string; band: string; flag: string }[];
   };
   patient?: {
     name: string;
@@ -47,6 +48,10 @@ export interface ChatContext {
     spo2Pct: number | null;
     temperatureC: number | null;
     acuteFlags: { severity: string; vital: string; message: string }[];
+    factors?: { name: string; displayValue: string; contribution: number; source: string; modifiable: boolean }[];
+    modelVersion?: string;
+    age?: number;
+    sex?: string;
   };
 }
 

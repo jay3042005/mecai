@@ -44,6 +44,7 @@ import { ArrowLeft, Send, Square, Trash2 } from "lucide-react";
 
 import { MecBot } from "@/components/ui/mec-bot";
 import {
+  assess,
   fetchFleetStats,
   fetchPatients,
   type FleetStats,
@@ -99,18 +100,81 @@ function Assistant() {
 
   const selected = patients.find((p) => p.patient_id === selectedId);
 
-  /**
-   * The snapshot the assistant may read.
-   *
-   * Built from the roster rather than a live scoring call: the stored reading already
-   * carries its band, confidence and acute flags, and asking the service to re-score
-   * would put a network round trip in front of every question for figures the page
-   * already has. Per-factor contributions are the one thing the archive does not
-   * store, and they are not part of this snapshot — the assistant is told about the
-   * band, not asked to explain its internals.
-   */
+  // Live factor breakdown — the roster stores band but not per-factor contributions.
+  // Fetching via `assess` lets the assistant answer "what is driving this band?"
+  // without hallucinating, and re-uses the same scoring path the dashboard uses.
+  const [liveFactors, setLiveFactors] = useState<
+    NonNullable<NonNullable<ChatContext["patient"]>["factors"]> | null
+  >(null);
+  const [liveModel, setLiveModel] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const latest = selected?.latest;
+    const profile = selected?.profile;
+    if (!selected || !latest || !profile || offline) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing stale factors when selection/offline changes is the intended sync
+      setLiveFactors(null);
+      setLiveModel(undefined);
+      return;
+    }
+    let cancelled = false;
+    const reading = {
+      systolic_mmhg: latest.systolic_mmhg,
+      diastolic_mmhg: latest.diastolic_mmhg,
+      heart_rate_bpm: latest.heart_rate_bpm,
+      spo2_pct: latest.spo2_pct,
+      temperature_c: latest.temperature_c,
+      ambient_temp_c: latest.ambient_temp_c,
+      measured_at: latest.measured_at ?? new Date().toISOString(),
+      motion_artifact: latest.motion_artifact ?? false,
+    } as const;
+    void assess(profile as unknown as Parameters<typeof assess>[0], reading as unknown as Parameters<typeof assess>[1])
+      .then((res) => {
+        if (cancelled) return;
+        setLiveFactors(
+          res.assessment.factors.map((f) => ({
+            name: f.name,
+            displayValue: f.display_value,
+            contribution: f.contribution,
+            source: f.source,
+            modifiable: f.modifiable,
+          })),
+        );
+        setLiveModel(res.assessment.model_version);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLiveFactors(null);
+          setLiveModel(undefined);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, offline]);
+
   const context: ChatContext = useMemo(() => {
     const latest = selected?.latest;
+    // Build triage list from roster — lets the assistant answer "who needs attention first?"
+    const alertedPatients =
+      patients.length > 0
+        ? patients
+            .filter((p) => (p.latest?.acute_flags?.length ?? 0) > 0 || p.open_sos_count > 0)
+            .sort((a, b) => {
+              const sev = (s: string) => (s === "critical" ? 0 : s === "warning" ? 1 : 2);
+              const aWorst = a.latest?.acute_flags?.[0]?.severity ?? "info";
+              const bWorst = b.latest?.acute_flags?.[0]?.severity ?? "info";
+              if (sev(aWorst) !== sev(bWorst)) return sev(aWorst) - sev(bWorst);
+              return (b.open_sos_count ?? 0) - (a.open_sos_count ?? 0);
+            })
+            .slice(0, 6)
+            .map((p) => ({
+              name: p.display_name,
+              band: p.latest?.band ?? "unknown",
+              flag: p.open_sos_count > 0 ? `SOS ×${p.open_sos_count}` : (p.latest?.acute_flags?.[0]?.message ?? p.latest?.acute_flags?.[0]?.vital ?? "flag"),
+            }))
+        : undefined;
+
     return {
       cohort: fleet
         ? {
@@ -119,6 +183,7 @@ function Assistant() {
             openSos: fleet.open_sos,
             patientsWithAlerts: fleet.patients_with_alerts,
             bandCounts: fleet.band_counts,
+            alertedPatients,
           }
         : undefined,
       patient:
@@ -140,10 +205,14 @@ function Assistant() {
                 vital: f.vital,
                 message: f.message,
               })),
+              factors: liveFactors ?? undefined,
+              modelVersion: liveModel ?? latest.model_version,
+              age: selected.profile.age,
+              sex: selected.profile.sex,
             }
           : undefined,
     };
-  }, [fleet, selected]);
+  }, [fleet, selected, liveFactors, liveModel, patients]);
 
   const chat = useChat(context);
   const transcriptRef = useRef<HTMLDivElement>(null);
