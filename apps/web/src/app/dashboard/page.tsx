@@ -32,6 +32,7 @@ import {
   Search,
   Siren,
   TrendingUp,
+  Sparkles,
   Users,
   Watch,
   X,
@@ -391,25 +392,32 @@ export default function DashboardPage() {
   // The stored snapshot carries band and percentage; the live response adds the
   // factor contributions and the scoring notes. Matched on patient id so an
   // in-flight response for the previous selection is never shown against this one.
-  const detail: AssessmentResponse =
-    breakdown && current && breakdown.patientId === current.patientId
-      ? breakdown.response
-      : (current?.response ?? {
-          assessment: {
-            band: "unknown",
-            value_pct: null,
-            horizon: "10-year",
-            factors: [],
-            confidence: "incomplete",
-            missing_fields: [],
-            model_version: "pending",
-            disclaimer:
-              "Screening indicator, not a diagnosis. Consult a physician.",
-          },
-          acute_flags: [],
-          reading_accepted: true,
-          notes: [],
-        });
+  //
+  // Memoised because the fallback branch allocates a fresh object literal: without
+  // this, `detail` was a new reference on every render, and anything depending on
+  // it — the assistant's snapshot below — could never memoise either.
+  const detail: AssessmentResponse = useMemo(
+    () =>
+      breakdown && current && breakdown.patientId === current.patientId
+        ? breakdown.response
+        : (current?.response ?? {
+            assessment: {
+              band: "unknown",
+              value_pct: null,
+              horizon: "10-year",
+              factors: [],
+              confidence: "incomplete",
+              missing_fields: [],
+              model_version: "pending",
+              disclaimer:
+                "Screening indicator, not a diagnosis. Consult a physician.",
+            },
+            acute_flags: [],
+            reading_accepted: true,
+            notes: [],
+          }),
+    [breakdown, current],
+  );
 
   return (
     <main
@@ -1218,6 +1226,31 @@ export default function DashboardPage() {
 
       {/* MD3 Floating Action Button (FAB) */}
       <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-30 flex items-center gap-3">
+        {/* Opens the assistant's own page rather than a panel here. The orb that
+            drives that conversation needs a viewport to be legible in — at FAB size
+            a deforming luminous field is a smudge — so this is a door, not a
+            drawer. The selected row travels in the query string so the assistant
+            opens on the patient the clinician was reading. */}
+        <Link
+          href={
+            current
+              ? `/assistant?patient=${encodeURIComponent(current.patientId)}`
+              : "/assistant"
+          }
+          aria-label="Open the MEC-AI assistant"
+          className="group flex h-14 items-center gap-2 rounded-2xl border px-4 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
+          style={{
+            background: "var(--mec-elevated)",
+            borderColor: "var(--mec-hairline)",
+            color: "var(--mec-ink-primary)",
+          }}
+        >
+          <Sparkles size={18} aria-hidden style={{ color: "var(--mec-s1)" }} />
+          <span className="hidden text-xs font-semibold tracking-wide sm:inline">
+            Ask MEC-AI
+          </span>
+        </Link>
+
         <button
           type="button"
           onClick={refresh}

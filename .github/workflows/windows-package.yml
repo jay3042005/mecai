@@ -7,8 +7,9 @@ on:
     paths:
       - apps/web/**
       - services/api/**
-      - deploy/windows/**
+      - deploy/**
       - .github/workflows/windows-package.yml
+      - pnpm-lock.yaml
 
 permissions:
   contents: read
@@ -24,6 +25,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Build dashboard
         shell: pwsh
         run: |
@@ -34,6 +38,13 @@ jobs:
         shell: pwsh
         run: |
           uv run --directory services/api --with pyinstaller pyinstaller --noconfirm --onefile --name MEC-AI-API --paths services/api/src --collect-all uvicorn --collect-all fastapi services/api/src/mecai_api/__main__.py
+      - name: Build launcher (no-console GUI)
+        shell: pwsh
+        run: |
+          pip install pyinstaller
+          # --noconsole so no terminal pops up; onefile so they can copy it to Desktop
+          pyinstaller --noconfirm --onefile --noconsole --name MECAI-Launcher --clean deploy/launcher/mecai_launcher.py
+          if (!(Test-Path "dist/MECAI-Launcher.exe")) { Write-Error "launcher build failed"; exit 1 }
       - name: Assemble client bundle
         shell: pwsh
         run: |
@@ -47,7 +58,22 @@ jobs:
           Expand-Archive "node.zip" -DestinationPath "."
           Copy-Item "node-v24.14.0-win-x64/node.exe" "$bundle\web\node.exe"
           Copy-Item "deploy/windows/*.bat" "$bundle\"
+          # GUI launcher — double-click, no terminal; also copy to root so Desktop shortcut can target it
+          Copy-Item "dist/MECAI-Launcher.exe" "$bundle\MECAI-Launcher.exe"
+          Copy-Item "dist/MECAI-Launcher.exe" "$bundle\..\MECAI-Launcher.exe" -ErrorAction SilentlyContinue
+          # convenience: drag this shortcut-creator to Desktop
+          @'
+          $s = $WshShell = New-Object -comObject WScript.Shell
+          $lnk = $s.CreateShortcut("$env:USERPROFILE\Desktop\MEC-AI.lnk")
+          $lnk.TargetPath = Join-Path $PSScriptRoot "MECAI-Launcher.exe"
+          $lnk.WorkingDirectory = $PSScriptRoot
+          $lnk.Description = "MEC-AI — Start API + Dashboard"
+          $lnk.Save()
+          Write-Host "Shortcut created on Desktop -> MEC-AI.lnk"
+          '@ | Set-Content "$bundle\Create-Desktop-Shortcut.ps1"
           @"
+          MECAI_HOST=0.0.0.0
+          MECAI_PORT=8000
           MECAI_DATABASE_PATH=data/mecai.db
           MECAI_ENABLE_MOCK_ENDPOINTS=false
           "@ | Set-Content "$bundle\.env"

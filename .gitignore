@@ -67,3 +67,9 @@ data/patients/
 # ── Generated artifacts (regenerate, don't commit stale) ─────
 # Token bindings ARE committed so clients build without a Node step,
 # but they must always match packages/tokens/tokens.json.
+
+# ── Windows launcher ──────────────────────────────────────────
+MECAI-Launcher.exe
+deploy/launcher/dist/
+deploy/launcher/build/
+deploy/launcher/icon.png
