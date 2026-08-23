@@ -193,7 +193,7 @@ class _MecAppState extends State<MecApp> {
       return;
     }
     final found = await discoverMecaiServer(
-      timeout: const Duration(seconds: 8),
+      mdnsTimeout: const Duration(seconds: 5),
     );
     if (found == null || !mounted) return;
     await widget.settings.setApiBaseUrl(found.baseUrl);

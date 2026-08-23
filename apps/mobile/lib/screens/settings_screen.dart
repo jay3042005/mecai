@@ -83,6 +83,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   _TestResult _result = const _TestIdle();
   int _archived = 0;
   bool _finding = false;
+
+  /// What auto-find is doing right now, shown on the button so a multi-second
+  /// search never looks like a tap that did nothing.
+  String _findStage = 'Listening for the server…';
   bool _seeding = false;
 
   @override
@@ -200,18 +204,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_finding) return;
     setState(() {
       _finding = true;
+      _findStage = 'Listening for the server…';
       _result = const _TestRunning();
     });
 
-    final found = await discoverMecaiServer();
+    final found = await discoverMecaiServer(onStage: (stage) {
+      if (!mounted) return;
+      setState(() {
+        _findStage = stage == DiscoveryStage.mdns
+            ? 'Listening for the server…'
+            : 'Scanning this Wi-Fi for the server…';
+      });
+    });
 
     if (found == null) {
       if (!mounted) return;
       setState(() {
         _finding = false;
         _result = const _TestFailed(
-          'No MEC-AI server announced on this network. Make sure the server '
-          'is running on the same Wi-Fi, then enter its IP above.',
+          'Searched this whole Wi-Fi and found no MEC-AI server. Check:\n'
+          '• The laptop is running (launcher shows "Start Both" green)\n'
+          '• This phone is on the SAME Wi-Fi as the server\n'
+          '• Windows Firewall allows python.exe on Private networks',
         );
       });
       return;
@@ -338,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: const Icon(Icons.radar, size: 16),
                 label: Text(
                   _finding
-                      ? 'Searching the network…'
+                      ? _findStage
                       : 'Find server automatically',
                 ),
               ),
