@@ -364,6 +364,7 @@ class ProfileHubScreen extends StatelessWidget {
                           builder: (_) => SettingsScreen(
                             settings: settings,
                             riskService: controller.riskService,
+                            profiles: profiles,
                             syncService: controller.syncService,
                             readingStore: controller.store,
                             source: controller.bleSource,

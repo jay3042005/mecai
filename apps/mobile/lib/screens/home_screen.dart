@@ -55,6 +55,7 @@ class HomeScreen extends StatelessWidget {
         builder: (_) => SettingsScreen(
           settings: controller.settings,
           riskService: controller.riskService,
+          profiles: controller.profileStore,
           syncService: controller.syncService,
           readingStore: controller.store,
         ),

@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/ble_vitals_source.dart';
+import '../data/profile_store.dart';
 import '../data/reading_store.dart';
 import '../data/risk_service.dart';
 import '../data/sample_data.dart';
@@ -33,6 +34,7 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.settings,
     required this.riskService,
+    required this.profiles,
     this.syncService,
     this.readingStore,
     this.source,
@@ -40,6 +42,9 @@ class SettingsScreen extends StatefulWidget {
 
   final AppSettings settings;
   final RiskService riskService;
+
+  /// Whose questionnaire the sample-data section names as its recipient.
+  final ProfileStore profiles;
 
   /// Null when SQLite could not be opened, in which case the Backup section says
   /// so rather than showing controls that cannot do anything.
@@ -267,10 +272,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _loadArchiveCount();
 
       if (!mounted) return;
+      final recipient = widget.profiles.resolvedDisplayName(
+        widget.settings.patientId,
+      );
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          'Added $inserted sample readings. Backup will upload them to the '
-          'dashboard.',
+          'Added $inserted sample readings for $recipient. Backup will '
+          'upload them to the dashboard.',
         ),
       ));
     } finally {
@@ -426,9 +434,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Sample data',
             subtitle: widget.readingStore == null
                 ? 'Unavailable on this device.'
-                : 'Adds two days of realistic back-dated readings for the '
-                    'current profile. They upload through normal backup, so '
-                    'the dashboard fills in too.',
+                // Names the recipient explicitly: with several profiles on one
+                // phone, "the current profile" was easy to misread as "me" —
+                // and demo readings landing on the wrong person's dashboard
+                // row is exactly the confusion this screen exists to prevent.
+                : 'Adds two days of realistic back-dated readings for '
+                    '${widget.profiles.resolvedDisplayName(widget.settings.patientId)}. '
+                    'They upload through normal backup, so the dashboard fills '
+                    'in for that person.',
           ),
           const SizedBox(height: MecSpace.s16),
           MecPress(
